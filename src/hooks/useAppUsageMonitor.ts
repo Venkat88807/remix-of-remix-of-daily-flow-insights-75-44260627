@@ -247,7 +247,7 @@ export function useAppUsageMonitor(currentActivityDescription?: string) {
         .map(a => a.packageName);
       
       await AppUsage.startMonitoring({ 
-        intervalMs: 2000,
+        intervalMs: 5000,
         workApps 
       });
       
