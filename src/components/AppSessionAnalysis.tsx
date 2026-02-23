@@ -33,7 +33,7 @@ export const AppSessionAnalysis: React.FC = () => {
     const entries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
     if (entries.length === 0) {
-      return { chartData: [], avgDaily: 0, totalAll: 0, totalThisWeek: 0, totalLastWeek: 0, trend: 0, totalDays: 0 };
+      return { chartData: [], avgDaily: 0, totalAll: 0, totalThisWeek: 0, totalLastWeek: 0, trend: 0, totalDays: 0, yearlyData: [] };
     }
 
     // Last 14 days
@@ -64,7 +64,17 @@ export const AppSessionAnalysis: React.FC = () => {
       ? Math.round(((totalThisWeek - totalLastWeek) / totalLastWeek) * 100)
       : 0;
 
-    return { chartData, avgDaily, totalAll, totalThisWeek, totalLastWeek, trend, totalDays: daysWithData };
+    // Yearly monthly breakdown
+    const year = now.getFullYear();
+    const yearlyData = Array.from({ length: 12 }, (_, m) => {
+      const monthPrefix = `${year}-${String(m + 1).padStart(2, '0')}`;
+      const monthEntries = entries.filter(([d]) => d.startsWith(monthPrefix));
+      const totalSecs = monthEntries.reduce((sum, [, v]) => sum + v, 0);
+      const monthLabel = new Date(year, m, 1).toLocaleDateString('en', { month: 'short' });
+      return { month: monthLabel, minutes: Math.round(totalSecs / 60) };
+    });
+
+    return { chartData, avgDaily, totalAll, totalThisWeek, totalLastWeek, trend, totalDays: daysWithData, yearlyData };
   }, []);
 
   return (
@@ -137,6 +147,26 @@ export const AppSessionAnalysis: React.FC = () => {
         <p className="text-xs text-muted-foreground text-center">
           {analysis.totalDays} days tracked · Last 14 days shown
         </p>
+
+        {/* Yearly logging time chart */}
+        {analysis.yearlyData.some(d => d.minutes > 0) && (
+          <>
+            <div className="border-t pt-4 mt-4">
+              <p className="text-sm font-medium text-foreground mb-2">Monthly Logging Time — {new Date().getFullYear()}</p>
+            </div>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analysis.yearlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+                  <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" label={{ value: 'min', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                  <Tooltip formatter={(value: number) => [`${value} min`, 'Time in app']} contentStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="minutes" fill="hsl(var(--chart-3))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

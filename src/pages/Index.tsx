@@ -16,6 +16,7 @@ import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { ProductivityHeatmap } from '@/components/ProductivityHeatmap';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
+import { YearlyStats } from '@/components/YearlyStats';
 import { SessionIntegrity } from '@/components/SessionIntegrity';
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { Button } from '@/components/ui/button';
@@ -354,6 +355,7 @@ const Index = () => {
               <TabsList className="flex flex-wrap gap-1">
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="yearly">Yearly</TabsTrigger>
                 <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
                 <TabsTrigger value="logging">Logging Time</TabsTrigger>
               </TabsList>
@@ -375,6 +377,10 @@ const Index = () => {
                   <Button variant="outline" size="sm" onClick={() => setMonthOffset(m => Math.max(0, m - 1))} disabled={monthOffset === 0}>Next →</Button>
                 </div>
                 <MonthlyAnalysis allData={allData} distractionHistory={distractionHistory} monthOffset={monthOffset} />
+              </TabsContent>
+
+              <TabsContent value="yearly" className="space-y-4 mt-4">
+                <YearlyStats allData={allData} distractionHistory={distractionHistory} />
               </TabsContent>
 
               <TabsContent value="heatmap" className="mt-4">
