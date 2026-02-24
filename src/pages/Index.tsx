@@ -15,6 +15,7 @@ import { AppSessionTimer } from '@/components/AppSessionTimer';
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { ProductivityHeatmap } from '@/components/ProductivityHeatmap';
+import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
 import { SessionIntegrity } from '@/components/SessionIntegrity';
@@ -224,17 +225,17 @@ const Index = () => {
               <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">Time Tracker</h1>
               <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">AI-powered personal activity tracking</p>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div className="flex items-center gap-0.5 flex-shrink-0">
               {isNativePlatform && (
-                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={isNotificationActive ? stopNotification : startNotification}>
+                <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={isNotificationActive ? stopNotification : startNotification}>
                   {isNotificationActive ? <BellOff className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
                 </Button>
               )}
-              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={exportData}><Download className="h-5 w-5" /></Button>
-              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={handleImport}><Upload className="h-5 w-5" /></Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={exportData}><Download className="h-5 w-5" /></Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={handleImport}><Upload className="h-5 w-5" /></Button>
               <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-10 w-10"><Trash2 className="h-5 w-5" /></Button>
+                  <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]"><Trash2 className="h-5 w-5" /></Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -247,7 +248,7 @@ const Index = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setIsDark(!isDark)}>
+              <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={() => setIsDark(!isDark)}>
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
             </div>
@@ -351,14 +352,19 @@ const Index = () => {
 
           {/* ===== ANALYSIS TAB ===== */}
           <TabsContent value="analysis" className="space-y-6">
-            <Tabs defaultValue="weekly">
+            <Tabs defaultValue="insights">
               <TabsList className="flex flex-wrap gap-1">
+                <TabsTrigger value="insights">Insights</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly</TabsTrigger>
                 <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-                <TabsTrigger value="logging">Logging Time</TabsTrigger>
+                <TabsTrigger value="logging">Logging</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="insights" className="mt-4">
+                <InsightsPage allData={allData} distractionHistory={distractionHistory} />
+              </TabsContent>
 
               <TabsContent value="weekly" className="space-y-4 mt-4">
                 <div className="flex items-center gap-2 flex-wrap">
