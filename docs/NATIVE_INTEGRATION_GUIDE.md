@@ -1,6 +1,6 @@
-# TimeGuard — Native Android Setup (Easy Mode)
+# TimeGuard — Native Android Setup (Windows)
 
-**Yes, you still need to add these native files.** Lovable can't create files inside `android/` — that folder only exists on your local machine. But I've made it as easy as possible.
+**You still need to add native files inside `android/`.** Lovable can't create files there — that folder only exists on your local machine. But it's streamlined below.
 
 ---
 
@@ -8,32 +8,32 @@
 
 ### Step 1: Set up the Android project
 
-```bash
-# In your project folder:
+```powershell
+# In your project folder (PowerShell):
 npm install
 npm run build
 npx cap add android
 npx cap sync android
 ```
 
-### Step 2: Run the setup script
+### Step 2: Run the setup script (PowerShell)
 
-Copy-paste this entire block into your terminal from the project root. It creates ALL native files automatically:
+Copy-paste this entire block into **PowerShell** from the project root. It creates ALL native files automatically:
 
-```bash
-# Set the package directory
-PKG_DIR="android/app/src/main/java/app/lovable/a1149aacd1d37483ba33873e03d9b20c6"
-PLUGINS_DIR="$PKG_DIR/plugins"
-RES_DIR="android/app/src/main/res"
+```powershell
+# Set paths
+$PKG_DIR = "android\app\src\main\java\app\lovable\a1149aacd1d37483ba33873e03d9b20c6"
+$PLUGINS_DIR = "$PKG_DIR\plugins"
+$RES_DIR = "android\app\src\main\res"
 
 # Create directories
-mkdir -p "$PLUGINS_DIR"
-mkdir -p "$RES_DIR/xml"
+New-Item -ItemType Directory -Force -Path $PLUGINS_DIR | Out-Null
+New-Item -ItemType Directory -Force -Path "$RES_DIR\xml" | Out-Null
 
 # ============================================
 # 1. Accessibility Service
 # ============================================
-cat > "$PKG_DIR/TimeGuardAccessibilityService.java" << 'JAVAEOF'
+@'
 package app.lovable.a1149aacd1d37483ba33873e03d9b20c6;
 
 import android.accessibilityservice.AccessibilityService;
@@ -55,7 +55,7 @@ public class TimeGuardAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName().toString();
         if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             if (!packageName.equals(currentForegroundPackage)) {
-                Log.d(TAG, "App Switch: " + currentForegroundPackage + " → " + packageName);
+                Log.d(TAG, "App Switch: " + currentForegroundPackage + " -> " + packageName);
                 currentForegroundPackage = packageName;
             }
         }
@@ -71,19 +71,19 @@ public class TimeGuardAccessibilityService extends AccessibilityService {
         if (info != null) {
             info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
             info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
-            info.notificationTimeout = 200;  // Battery-friendly: 200ms debounce
+            info.notificationTimeout = 200;
             info.flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
             setServiceInfo(info);
         }
         Log.d(TAG, "Service connected");
     }
 }
-JAVAEOF
+'@ | Set-Content -Path "$PKG_DIR\TimeGuardAccessibilityService.java" -Encoding UTF8
 
 # ============================================
 # 2. Accessibility Service Config XML
 # ============================================
-cat > "$RES_DIR/xml/accessibility_service_config.xml" << 'XMLEOF'
+@'
 <?xml version="1.0" encoding="utf-8"?>
 <accessibility-service
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -93,12 +93,12 @@ cat > "$RES_DIR/xml/accessibility_service_config.xml" << 'XMLEOF'
     android:canRetrieveWindowContent="false"
     android:accessibilityFlags="flagReportViewIds"
     android:description="@string/accessibility_service_description" />
-XMLEOF
+'@ | Set-Content -Path "$RES_DIR\xml\accessibility_service_config.xml" -Encoding UTF8
 
 # ============================================
 # 3. App Usage Plugin
 # ============================================
-cat > "$PLUGINS_DIR/AppUsagePlugin.java" << 'JAVAEOF'
+@'
 package app.lovable.a1149aacd1d37483ba33873e03d9b20c6.plugins;
 
 import android.app.AppOpsManager;
@@ -288,12 +288,12 @@ public class AppUsagePlugin extends Plugin {
         } catch (PackageManager.NameNotFoundException e) { return packageName; }
     }
 }
-JAVAEOF
+'@ | Set-Content -Path "$PLUGINS_DIR\AppUsagePlugin.java" -Encoding UTF8
 
 # ============================================
 # 4. Persistent Notification Plugin
 # ============================================
-cat > "$PLUGINS_DIR/PersistentNotificationPlugin.java" << 'JAVAEOF'
+@'
 package app.lovable.a1149aacd1d37483ba33873e03d9b20c6.plugins;
 
 import android.app.Notification;
@@ -324,8 +324,8 @@ public class PersistentNotificationPlugin extends Plugin {
     private static final String ACTION_REPLY = "app.lovable.a1149aacd1d37483ba33873e03d9b20c6.ACTION_REPLY";
 
     private NotificationManager notificationManager;
-    private String currentTitle = "💬 Quick Note";
-    private String currentBody = "💬 Tap to open or reply with what you're doing";
+    private String currentTitle = "Quick Note";
+    private String currentBody = "Tap to open or reply with what you're doing";
     private BroadcastReceiver replyReceiver;
 
     @Override
@@ -355,10 +355,10 @@ public class PersistentNotificationPlugin extends Plugin {
                     JSObject data = new JSObject();
                     data.put("text", replyText);
                     notifyListeners("notificationReply", data);
-                    currentBody = "✓ Got it: " + replyText;
+                    currentBody = "Got it: " + replyText;
                     showNotification();
                     getActivity().getWindow().getDecorView().postDelayed(() -> {
-                        currentBody = "💬 Tap to open or reply with what you're doing";
+                        currentBody = "Tap to open or reply with what you're doing";
                         showNotification();
                     }, 3000);
                 }
@@ -421,12 +421,12 @@ public class PersistentNotificationPlugin extends Plugin {
         super.handleOnDestroy();
     }
 }
-JAVAEOF
+'@ | Set-Content -Path "$PLUGINS_DIR\PersistentNotificationPlugin.java" -Encoding UTF8
 
 # ============================================
 # 5. MainActivity (register plugins)
 # ============================================
-cat > "$PKG_DIR/MainActivity.java" << 'JAVAEOF'
+@'
 package app.lovable.a1149aacd1d37483ba33873e03d9b20c6;
 
 import android.os.Bundle;
@@ -442,16 +442,15 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
     }
 }
-JAVAEOF
+'@ | Set-Content -Path "$PKG_DIR\MainActivity.java" -Encoding UTF8
 
-echo "✅ All Java files created!"
-echo ""
-echo "Now do the 2 manual edits below (AndroidManifest.xml + strings.xml)"
+Write-Host "All Java files created!" -ForegroundColor Green
+Write-Host "Now do the 2 manual edits below (AndroidManifest.xml + strings.xml)"
 ```
 
 ### Step 3: Two manual edits
 
-#### A. Edit `android/app/src/main/AndroidManifest.xml`
+#### A. Edit `android\app\src\main\AndroidManifest.xml`
 
 Add `xmlns:tools` to the `<manifest>` tag:
 ```xml
@@ -481,7 +480,7 @@ Add this **inside** `<application>` (before `</application>`):
 </service>
 ```
 
-#### B. Edit `android/app/src/main/res/values/strings.xml`
+#### B. Edit `android\app\src\main\res\values\strings.xml`
 
 Add inside `<resources>`:
 ```xml
@@ -492,11 +491,11 @@ Add inside `<resources>`:
 
 ## Build & Install
 
-```bash
+```powershell
 npm run build
 npx cap sync android
 npx cap open android
-# In Android Studio: Build → Build APK
+# In Android Studio: Build > Build APK
 ```
 
 ---
@@ -504,8 +503,20 @@ npx cap open android
 ## After Installing the APK
 
 1. **Settings → Accessibility → TimeGuard** → Toggle ON
-2. Open the app → tap "Grant Permission" for Usage Access
-3. Allow notifications when prompted
+2. Open the app → go to **Apps** tab → tap **Grant Permission** for Usage Access
+3. Tap **Start** to begin monitoring
+4. Allow notifications when prompted
+5. In the header, tap the **Bell icon** to enable persistent notification
+
+---
+
+## Persistent Notification
+
+The bell icon (🔔) in the app header toggles the persistent notification. When active:
+- A permanent notification stays in your notification shade
+- You can **reply directly** from the notification to log activities
+- It shows your current activity
+- Low priority = no sound/vibration, minimal battery
 
 ---
 
@@ -513,11 +524,11 @@ npx cap open android
 
 This app is designed to be battery-friendly:
 
-- **Polling interval: 5 seconds** (not continuous — only checks every 5s)
-- **Accessibility Service** only listens for `TYPE_WINDOW_STATE_CHANGED` (not all events)
-- **`canRetrieveWindowContent="false"`** — doesn't read screen content, saves CPU
+- **Polling interval: 5 seconds** (not continuous)
+- **Accessibility Service** only listens for `TYPE_WINDOW_STATE_CHANGED`
+- **`canRetrieveWindowContent="false"`** — doesn't read screen content
 - **`notificationTimeout="200"`** — debounces rapid events
-- **Notification priority: LOW** — no vibration/sound, minimal battery impact
+- **Notification priority: LOW** — no vibration/sound
 - **No background location or wake locks**
 
 ### Disable Battery Optimization (recommended)
@@ -528,11 +539,20 @@ After installing, go to **Settings → Battery → TimeGuard → Don't optimize*
 
 ## Verify It's Working
 
-```bash
+```powershell
 adb logcat -s TIMEGUARD_ACCESS TIMEGUARD_USAGE
 ```
 
 You should see logs like:
 ```
-TIMEGUARD_ACCESS: App Switch: com.instagram.android → app.lovable.1149aacd...
+TIMEGUARD_ACCESS: App Switch: com.instagram.android -> app.lovable.1149aacd...
 ```
+
+---
+
+## Already Set Up?
+
+If you already manually created the Java files and they work in logcat, you're good! Just make sure:
+1. `MainActivity.java` has both `registerPlugin(AppUsagePlugin.class)` and `registerPlugin(PersistentNotificationPlugin.class)`
+2. The accessibility service and manifest entries are in place
+3. Rebuild: `npm run build && npx cap sync android` then build APK in Android Studio
