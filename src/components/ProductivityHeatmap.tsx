@@ -20,20 +20,21 @@ const getCellStyle = (productivity: number, distraction: number): string => {
   if (productivity === 0 && distraction === 0) return 'bg-muted/30';
   const net = productivity - distraction;
   if (distraction > productivity) {
-    // Red shades for distraction-heavy
-    if (distraction > 20) return 'bg-red-500/80 dark:bg-red-600/80';
+    if (distraction > 20) return 'bg-red-600/90 dark:bg-red-700/90';
     return 'bg-red-400/60 dark:bg-red-500/60';
   }
-  if (net > 30) return 'bg-emerald-500/80 dark:bg-emerald-600/80'; // Deep green
-  if (net > 15) return 'bg-emerald-400/60 dark:bg-emerald-500/60'; // Medium green
-  if (net > 5) return 'bg-yellow-400/60 dark:bg-yellow-500/60';    // Yellow - some activity
-  return 'bg-yellow-300/40 dark:bg-yellow-400/40';                  // Light yellow - low
+  if (net > 45) return 'bg-green-900/95 dark:bg-green-800/95';      // Intense dark green
+  if (net > 30) return 'bg-green-700/85 dark:bg-green-700/85';      // Dark green
+  if (net > 15) return 'bg-emerald-500/75 dark:bg-emerald-500/75';  // Medium green
+  if (net > 5) return 'bg-emerald-400/50 dark:bg-emerald-400/50';   // Light green
+  return 'bg-yellow-400/40 dark:bg-yellow-500/40';                   // Yellow - low
 };
 
 const getCellLabel = (productivity: number, distraction: number) => {
   if (productivity === 0 && distraction === 0) return 'No activity';
   const net = productivity - distraction;
   if (distraction > productivity) return 'High distraction';
+  if (net > 45) return 'Intense work';
   if (net > 30) return 'Very productive';
   if (net > 15) return 'Productive';
   if (net > 5) return 'Some activity';
@@ -159,9 +160,10 @@ export const ProductivityHeatmap: React.FC<ProductivityHeatmapProps> = ({
           </div>
           {/* Legend */}
           <div className="flex flex-wrap gap-2 sm:gap-3 mt-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-500/80" /> Very productive</div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-400/60" /> Productive</div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-yellow-400/60" /> Some activity</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-green-900/95" /> Intense</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-green-700/85" /> Very productive</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-500/75" /> Productive</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-400/50" /> Some</div>
             <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-red-400/60" /> Distracted</div>
             <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-muted/30" /> None</div>
           </div>
@@ -205,9 +207,10 @@ export const ProductivityHeatmap: React.FC<ProductivityHeatmapProps> = ({
           </div>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3 mt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-500/80" /> Very productive</div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-400/60" /> Productive</div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-yellow-400/60" /> Some activity</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-green-900/95" /> Intense</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-green-700/85" /> Very productive</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-500/75" /> Productive</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-400/50" /> Some</div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-red-400/60" /> Distracted</div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-muted/30" /> None</div>
         </div>
