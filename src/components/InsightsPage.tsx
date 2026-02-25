@@ -5,7 +5,6 @@ import {
 } from 'recharts';
 import { format, subDays, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DayData, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
 import { TrendingUp, TrendingDown, Minus, Clock, CalendarDays, Flame, BarChart3 } from 'lucide-react';
@@ -524,22 +523,10 @@ const TrendView: React.FC<InsightsPageProps> = ({ allData }) => {
 // ===== MAIN INSIGHTS =====
 export const InsightsPage: React.FC<InsightsPageProps> = (props) => {
   return (
-    <Tabs defaultValue="period" className="space-y-4">
-      <TabsList className="w-full justify-start overflow-x-auto">
-        <TabsTrigger value="period" className="min-h-[44px] min-w-[44px]">Period</TabsTrigger>
-        <TabsTrigger value="month" className="min-h-[44px] min-w-[44px]">Month</TabsTrigger>
-        <TabsTrigger value="trend" className="min-h-[44px] min-w-[44px]">Trend</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="period">
-        <PeriodView {...props} />
-      </TabsContent>
-      <TabsContent value="month">
-        <MonthView {...props} />
-      </TabsContent>
-      <TabsContent value="trend">
-        <TrendView {...props} />
-      </TabsContent>
-    </Tabs>
+    <div className="space-y-6">
+      <PeriodView {...props} />
+      <MonthView {...props} />
+      <TrendView {...props} />
+    </div>
   );
 };
