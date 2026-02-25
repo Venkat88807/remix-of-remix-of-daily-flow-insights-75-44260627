@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Moon, Sun, Download, Upload, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react';
+import { Moon, Sun, Download, Upload, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, BellOff, MoreVertical } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
 import { useActivities } from '@/hooks/useActivities';
 import { useAppUsageMonitor } from '@/hooks/useAppUsageMonitor';
@@ -24,8 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { ParsedActivity, ActivityCategory, Activity } from '@/types/activity';
 import { cn } from '@/lib/utils';
@@ -225,32 +226,36 @@ const Index = () => {
               <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">Time Tracker</h1>
               <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">AI-powered personal activity tracking</p>
             </div>
-            <div className="flex items-center gap-0.5 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
               {isNativePlatform && (
                 <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={isNotificationActive ? stopNotification : startNotification}>
                   {isNotificationActive ? <BellOff className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
                 </Button>
               )}
-              <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={exportData}><Download className="h-5 w-5" /></Button>
-              <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={handleImport}><Upload className="h-5 w-5" /></Button>
-              <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]"><Trash2 className="h-5 w-5" /></Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Clear All Data?</DialogTitle>
-                    <DialogDescription>This will permanently delete all your tracked activities.</DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowClearDialog(false)}>Cancel</Button>
-                    <Button variant="destructive" onClick={handleClearAll}>Clear All</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]" onClick={() => setIsDark(!isDark)}>
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-11 w-11 min-w-[44px] min-h-[44px]">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportData}>
+                    <Download className="h-4 w-4 mr-2" /> Export Data
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleImport}>
+                    <Upload className="h-4 w-4 mr-2" /> Import Data
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowClearDialog(true)} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" /> Clear All Data
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsDark(!isDark)}>
+                    {isDark ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                    {isDark ? 'Light Mode' : 'Dark Mode'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -352,33 +357,31 @@ const Index = () => {
 
           {/* ===== ANALYSIS TAB ===== */}
           <TabsContent value="analysis" className="space-y-6">
-            <Tabs defaultValue="insights">
-              <TabsList className="flex flex-wrap gap-1">
-                <TabsTrigger value="insights">Insights</TabsTrigger>
+            <Tabs defaultValue="overview">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-                <TabsTrigger value="logging">Logging</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="insights" className="mt-4">
+              <TabsContent value="overview" className="mt-4 space-y-4">
                 <InsightsPage allData={allData} distractionHistory={distractionHistory} />
               </TabsContent>
 
               <TabsContent value="weekly" className="space-y-4 mt-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w + 1)}>← Previous</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w + 1)}>← Prev</Button>
                   <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)} disabled={weekOffset === 0}>Current</Button>
                   <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}>Next →</Button>
                 </div>
                 <WeeklyAnalysis allData={allData} distractionHistory={distractionHistory} weekOffset={weekOffset} />
-                <SessionIntegrity activities={activities} distractionHistory={distractionHistory} />
+                <ProductivityHeatmap allData={allData} distractionHistory={distractionHistory} selectedDate={selectedDate} mode="weekly" />
               </TabsContent>
 
               <TabsContent value="monthly" className="space-y-4 mt-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" onClick={() => setMonthOffset(m => m + 1)}>← Previous</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setMonthOffset(m => m + 1)}>← Prev</Button>
                   <Button variant="outline" size="sm" onClick={() => setMonthOffset(0)} disabled={monthOffset === 0}>Current</Button>
                   <Button variant="outline" size="sm" onClick={() => setMonthOffset(m => Math.max(0, m - 1))} disabled={monthOffset === 0}>Next →</Button>
                 </div>
@@ -387,13 +390,6 @@ const Index = () => {
 
               <TabsContent value="yearly" className="space-y-4 mt-4">
                 <YearlyStats allData={allData} distractionHistory={distractionHistory} />
-              </TabsContent>
-
-              <TabsContent value="heatmap" className="mt-4">
-                <ProductivityHeatmap allData={allData} distractionHistory={distractionHistory} selectedDate={selectedDate} mode="weekly" />
-              </TabsContent>
-
-              <TabsContent value="logging" className="mt-4">
                 <AppSessionAnalysis />
               </TabsContent>
             </Tabs>
