@@ -195,7 +195,7 @@ export function useAppUsageMonitor(currentActivityDescription?: string) {
         };
         
         // Save to database
-        const { data } = await supabase
+        const { data, error: insertError } = await supabase
           .from('app_distractions')
           .insert({
             package_name: updatedDistraction.packageName,
@@ -207,7 +207,11 @@ export function useAppUsageMonitor(currentActivityDescription?: string) {
             current_activity_description: currentActivityDescription
           })
           .select()
-          .single();
+          .maybeSingle();
+        
+        if (insertError) {
+          console.error('Error inserting distraction:', insertError);
+        }
         
         if (data) {
           updatedDistraction.id = data.id;
