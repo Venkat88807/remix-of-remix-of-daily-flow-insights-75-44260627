@@ -155,8 +155,9 @@ export const useActivities = (selectedDate?: string) => {
 
   // Update an activity
   const updateActivity = useCallback((activityId: string, updates: Partial<Activity>) => {
+    console.log('updateActivity called:', activityId, 'updates:', JSON.stringify(updates));
     setAllData(prev => {
-      return prev.map(day => ({
+      const newData = prev.map(day => ({
         ...day,
         activities: day.activities.map(a => {
           if (a.id === activityId) {
@@ -167,11 +168,13 @@ export const useActivities = (selectedDate?: string) => {
                 updatedActivity.endTime
               );
             }
+            console.log('Activity updated:', a.category, '->', updatedActivity.category);
             return updatedActivity;
           }
           return a;
         }),
       }));
+      return newData;
     });
   }, []);
 
