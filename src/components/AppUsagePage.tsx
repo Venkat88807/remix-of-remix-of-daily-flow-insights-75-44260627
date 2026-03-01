@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { Smartphone, Plus, Target, BarChart3, Trash2, Clock } from 'lucide-react';
+import { Smartphone, Plus, Target, BarChart3, Trash2, Clock, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,33 +67,69 @@ export const AppUsagePage: React.FC = () => {
     }
   };
 
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const totalDailySeconds = dailySummary.reduce((sum, a) => sum + a.totalSeconds, 0);
+  const appsOverLimit = dailySummary.filter(a => 
+    a.dailyLimitMinutes && (a.totalSeconds / 60) >= a.dailyLimitMinutes
+  ).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Tabs defaultValue="daily">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="daily">Daily</TabsTrigger>
-          <TabsTrigger value="limits">Limits</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4 h-11">
+          <TabsTrigger value="daily" className="text-xs sm:text-sm gap-1.5">
+            <Clock className="h-3.5 w-3.5 hidden sm:block" />
+            Daily
+          </TabsTrigger>
+          <TabsTrigger value="limits" className="text-xs sm:text-sm gap-1.5">
+            <Target className="h-3.5 w-3.5 hidden sm:block" />
+            Limits
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="text-xs sm:text-sm gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5 hidden sm:block" />
+            Monthly
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs sm:text-sm gap-1.5">
+            <Zap className="h-3.5 w-3.5 hidden sm:block" />
+            Settings
+          </TabsTrigger>
         </TabsList>
 
         {/* ===== DAILY ===== */}
-        <TabsContent value="daily" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between gap-2">
+        <TabsContent value="daily" className="mt-5 space-y-4">
+          {/* Date + Add button */}
+          <div className="flex items-center justify-between gap-3">
             <Input
               type="date"
               value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
-              className="w-auto"
+              className="w-auto text-sm"
             />
-            <Button size="sm" variant="outline" onClick={() => setShowAddLog(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Log Usage
+            <Button size="sm" onClick={() => setShowAddLog(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" /> Log Usage
             </Button>
           </div>
 
-          {/* Summary cards */}
+          {/* Quick Stats */}
+          {dailySummary.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs text-muted-foreground">Total Screen Time</p>
+                  <p className="text-xl font-bold text-primary mt-0.5">{fmtDur(totalDailySeconds)}</p>
+                </CardContent>
+              </Card>
+              <Card className={appsOverLimit > 0 ? 'bg-destructive/5 border-destructive/20' : 'bg-accent border-accent'}>
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs text-muted-foreground">Over Limit</p>
+                  <p className={`text-xl font-bold mt-0.5 ${appsOverLimit > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                    {appsOverLimit} {appsOverLimit === 1 ? 'app' : 'apps'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* App Usage Cards */}
           {dailySummary.length > 0 ? (
             <div className="space-y-3">
               {dailySummary.map((app, i) => {
@@ -107,33 +143,46 @@ export const AppUsagePage: React.FC = () => {
                 const overMonthly = monthlyPct !== null && monthlyPct >= 100;
 
                 return (
-                  <Card key={app.appName} className={overDaily ? 'border-destructive' : ''}>
-                    <CardContent className="py-3 px-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                          <span className="font-medium text-sm">{app.appName}</span>
+                  <Card key={app.appName} className={`transition-all ${overDaily ? 'border-destructive/50 bg-destructive/5' : 'hover:shadow-md'}`}>
+                    <CardContent className="py-3.5 px-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+                            style={{ backgroundColor: COLORS[i % COLORS.length], color: 'white' }}
+                          >
+                            {app.appName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-sm">{app.appName}</span>
+                            {overDaily && (
+                              <div className="flex items-center gap-1 text-xs text-destructive">
+                                <AlertTriangle className="h-3 w-3" />
+                                Over limit
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-sm font-bold">{fmtDur(app.totalSeconds)}</span>
+                        <span className="text-base font-bold tabular-nums">{fmtDur(app.totalSeconds)}</span>
                       </div>
 
                       {dailyPct !== null && (
                         <div className="mt-2">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1">
                             <span>Daily: {Math.round(app.totalSeconds / 60)}m / {app.dailyLimitMinutes}m</span>
-                            <span className={overDaily ? 'text-destructive font-medium' : ''}>{dailyPct}%</span>
+                            <span className={overDaily ? 'text-destructive font-semibold' : 'font-medium'}>{dailyPct}%</span>
                           </div>
-                          <Progress value={dailyPct} className={`h-1.5 ${overDaily ? '[&>div]:bg-destructive' : ''}`} />
+                          <Progress value={dailyPct} className={`h-2 ${overDaily ? '[&>div]:bg-destructive' : ''}`} />
                         </div>
                       )}
 
                       {monthlyPct !== null && (
-                        <div className="mt-2">
+                        <div className="mt-2.5">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1">
                             <span>Monthly: {fmtDur(app.monthlyTotalSeconds)} / {Math.round(app.monthlyLimitMinutes! / 60)}h</span>
-                            <span className={overMonthly ? 'text-destructive font-medium' : ''}>{monthlyPct}%</span>
+                            <span className={overMonthly ? 'text-destructive font-semibold' : 'font-medium'}>{monthlyPct}%</span>
                           </div>
-                          <Progress value={monthlyPct} className={`h-1.5 ${overMonthly ? '[&>div]:bg-destructive' : ''}`} />
+                          <Progress value={monthlyPct} className={`h-2 ${overMonthly ? '[&>div]:bg-destructive' : ''}`} />
                         </div>
                       )}
                     </CardContent>
@@ -142,28 +191,31 @@ export const AppUsagePage: React.FC = () => {
               })}
             </div>
           ) : (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <Smartphone className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">No app usage for this date</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowAddLog(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Log Manually
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Smartphone className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="font-medium text-foreground">No app usage logged</p>
+                <p className="text-sm text-muted-foreground mt-1">Start tracking by logging your app usage</p>
+                <Button size="sm" className="mt-4 gap-1.5" onClick={() => setShowAddLog(true)}>
+                  <Plus className="h-4 w-4" /> Log Usage
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Daily pie chart */}
+          {/* Pie Chart */}
           {dailySummary.length > 0 && dailySummary.some(a => a.totalSeconds > 0) && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Time Distribution
+                  <BarChart3 className="h-4 w-4 text-primary" /> Time Distribution
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <div className="h-40 w-40 flex-shrink-0">
+                  <div className="h-44 w-44 flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -171,8 +223,9 @@ export const AppUsagePage: React.FC = () => {
                           dataKey="totalSeconds"
                           nameKey="appName"
                           cx="50%" cy="50%"
-                          outerRadius={65} innerRadius={35}
-                          paddingAngle={2}
+                          outerRadius={70} innerRadius={40}
+                          paddingAngle={3}
+                          strokeWidth={0}
                         >
                           {dailySummary.filter(a => a.totalSeconds > 0).map((_, i) => (
                             <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -182,11 +235,11 @@ export const AppUsagePage: React.FC = () => {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex flex-col gap-1.5 min-w-0">
+                  <div className="flex flex-col gap-2 min-w-0">
                     {dailySummary.filter(a => a.totalSeconds > 0).map((app, i) => (
                       <div key={app.appName} className="flex items-center gap-2 text-xs">
-                        <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="truncate">{app.appName}</span>
+                        <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="truncate font-medium">{app.appName}</span>
                         <span className="text-muted-foreground ml-auto whitespace-nowrap">{fmtDur(app.totalSeconds)}</span>
                       </div>
                     ))}
@@ -196,26 +249,32 @@ export const AppUsagePage: React.FC = () => {
             </Card>
           )}
 
-          {/* Recent logs */}
+          {/* Logs */}
           {logs.filter(l => l.usageDate === selectedDate).length > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Clock className="h-4 w-4" /> Logs
+                  <Clock className="h-4 w-4 text-primary" /> Activity Log
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-1">
                 {logs.filter(l => l.usageDate === selectedDate).map(log => (
-                  <div key={log.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
-                    <div>
-                      <span className="font-medium">{log.appName}</span>
-                      <span className="text-muted-foreground ml-2">{fmtDur(log.durationSeconds)}</span>
-                      {log.source === 'manual' && (
-                        <span className="text-xs text-muted-foreground ml-1">(manual)</span>
-                      )}
-                      {log.notes && <p className="text-xs text-muted-foreground">{log.notes}</p>}
+                  <div key={log.id} className="flex items-center justify-between text-sm py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors border-b last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: COLORS[allAppNames.indexOf(log.appName) % COLORS.length] }}
+                      />
+                      <div>
+                        <span className="font-medium">{log.appName}</span>
+                        <span className="text-muted-foreground ml-2">{fmtDur(log.durationSeconds)}</span>
+                        {log.source === 'manual' && (
+                          <span className="text-xs bg-muted px-1.5 py-0.5 rounded ml-1.5">manual</span>
+                        )}
+                        {log.notes && <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>}
+                      </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteLog(log.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteLog(log.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -226,100 +285,136 @@ export const AppUsagePage: React.FC = () => {
         </TabsContent>
 
         {/* ===== LIMITS ===== */}
-        <TabsContent value="limits" className="mt-4 space-y-4">
-          <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => setShowAddLimit(true)}>
-              <Target className="h-4 w-4 mr-1" /> Add Limit
+        <TabsContent value="limits" className="mt-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-foreground">App Limits</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Set daily & monthly caps</p>
+            </div>
+            <Button size="sm" onClick={() => setShowAddLimit(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" /> Add Limit
             </Button>
           </div>
 
           {limits.length > 0 ? (
             <div className="space-y-3">
-              {limits.map(lim => (
-                <Card key={lim.id}>
-                  <CardContent className="py-3 px-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{lim.appName}</p>
-                      <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                        {lim.dailyLimitMinutes && <span>Daily: {lim.dailyLimitMinutes}m</span>}
-                        {lim.monthlyLimitMinutes && <span>Monthly: {Math.round(lim.monthlyLimitMinutes / 60)}h</span>}
+              {limits.map((lim, i) => (
+                <Card key={lim.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="py-3.5 px-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+                        style={{ backgroundColor: COLORS[i % COLORS.length], color: 'white' }}
+                      >
+                        {lim.appName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{lim.appName}</p>
+                        <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
+                          {lim.dailyLimitMinutes && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {lim.dailyLimitMinutes}m/day
+                            </span>
+                          )}
+                          {lim.monthlyLimitMinutes && (
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3" /> {Math.round(lim.monthlyLimitMinutes / 60)}h/mo
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteLimit(lim.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => deleteLimit(lim.id)}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <Target className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground text-sm">No limits set</p>
-                <p className="text-xs text-muted-foreground mt-1">Set daily/monthly limits for apps like Instagram, YouTube</p>
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Target className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="font-medium text-foreground">No limits set</p>
+                <p className="text-sm text-muted-foreground mt-1">Set daily & monthly limits for apps like Instagram, YouTube</p>
+                <Button size="sm" className="mt-4 gap-1.5" onClick={() => setShowAddLimit(true)}>
+                  <Plus className="h-4 w-4" /> Add Limit
+                </Button>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         {/* ===== MONTHLY ===== */}
-        <TabsContent value="monthly" className="mt-4 space-y-4">
+        <TabsContent value="monthly" className="mt-5 space-y-4">
           {monthlyStats.some(m => m.totalSeconds > 0) ? (
             <>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Monthly Total — {new Date().getFullYear()}</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" /> Monthly Overview — {new Date().getFullYear()}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-44">
+                  <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={monthlyStats}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                         <XAxis dataKey="month" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
                         <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" tickFormatter={v => `${Math.round(v / 3600)}h`} />
-                        <Tooltip formatter={(v: number) => [fmtDur(v), 'Total']} contentStyle={{ fontSize: 11 }} />
-                        <Bar dataKey="totalSeconds" fill="hsl(var(--chart-1))" radius={[3, 3, 0, 0]} />
+                        <Tooltip formatter={(v: number) => [fmtDur(v), 'Total']} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <Bar dataKey="totalSeconds" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Per-month app breakdown */}
-              {monthlyStats.filter(m => m.totalSeconds > 0).map((m, mi) => (
-                <Card key={m.month}>
+              {monthlyStats.filter(m => m.totalSeconds > 0).map((m) => (
+                <Card key={m.month} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">{m.month} — {fmtDur(m.totalSeconds)}</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold">{m.month}</CardTitle>
+                      <span className="text-sm font-bold text-primary">{fmtDur(m.totalSeconds)}</span>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-1.5">
-                      {m.apps.slice(0, 8).map((app, i) => (
-                        <div key={app.appName} className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                            <span>{app.appName}</span>
+                    <div className="space-y-2">
+                      {m.apps.slice(0, 8).map((app, i) => {
+                        const pct = m.totalSeconds > 0 ? Math.round((app.totalSeconds / m.totalSeconds) * 100) : 0;
+                        return (
+                          <div key={app.appName} className="flex items-center gap-3 text-xs">
+                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                            <span className="font-medium flex-1 truncate">{app.appName}</span>
+                            <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                            </div>
+                            <span className="text-muted-foreground tabular-nums w-12 text-right">{fmtDur(app.totalSeconds)}</span>
                           </div>
-                          <span className="text-muted-foreground">{fmtDur(app.totalSeconds)}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </>
           ) : (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <BarChart3 className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">No monthly data yet</p>
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="font-medium text-foreground">No monthly data yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Start logging app usage to see trends</p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         {/* ===== SETTINGS ===== */}
-        <TabsContent value="settings" className="mt-4">
+        <TabsContent value="settings" className="mt-5">
           <WhitelistApps />
         </TabsContent>
       </Tabs>
@@ -329,7 +424,7 @@ export const AppUsagePage: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Log App Usage</DialogTitle>
-            <DialogDescription>Manually log time spent on an app</DialogDescription>
+            <DialogDescription>Manually record time spent on an app</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -339,6 +434,7 @@ export const AppUsagePage: React.FC = () => {
                 value={logForm.appName}
                 onChange={e => setLogForm(f => ({ ...f, appName: e.target.value }))}
                 list="app-names"
+                className="mt-1.5"
               />
               <datalist id="app-names">
                 {allAppNames.map(n => <option key={n} value={n} />)}
@@ -347,20 +443,20 @@ export const AppUsagePage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Hours</Label>
-                <Input type="number" min="0" placeholder="0" value={logForm.hours} onChange={e => setLogForm(f => ({ ...f, hours: e.target.value }))} />
+                <Input type="number" min="0" placeholder="0" value={logForm.hours} onChange={e => setLogForm(f => ({ ...f, hours: e.target.value }))} className="mt-1.5" />
               </div>
               <div>
                 <Label>Minutes</Label>
-                <Input type="number" min="0" max="59" placeholder="30" value={logForm.minutes} onChange={e => setLogForm(f => ({ ...f, minutes: e.target.value }))} />
+                <Input type="number" min="0" max="59" placeholder="30" value={logForm.minutes} onChange={e => setLogForm(f => ({ ...f, minutes: e.target.value }))} className="mt-1.5" />
               </div>
             </div>
             <div>
               <Label>Date</Label>
-              <Input type="date" value={logForm.date} onChange={e => setLogForm(f => ({ ...f, date: e.target.value }))} />
+              <Input type="date" value={logForm.date} onChange={e => setLogForm(f => ({ ...f, date: e.target.value }))} className="mt-1.5" />
             </div>
             <div>
               <Label>Notes (optional)</Label>
-              <Input placeholder="e.g. reels scrolling" value={logForm.notes} onChange={e => setLogForm(f => ({ ...f, notes: e.target.value }))} />
+              <Input placeholder="e.g. reels scrolling" value={logForm.notes} onChange={e => setLogForm(f => ({ ...f, notes: e.target.value }))} className="mt-1.5" />
             </div>
           </div>
           <DialogFooter>
@@ -385,6 +481,7 @@ export const AppUsagePage: React.FC = () => {
                 value={limitForm.appName}
                 onChange={e => setLimitForm(f => ({ ...f, appName: e.target.value }))}
                 list="app-names-limit"
+                className="mt-1.5"
               />
               <datalist id="app-names-limit">
                 {allAppNames.map(n => <option key={n} value={n} />)}
@@ -392,11 +489,11 @@ export const AppUsagePage: React.FC = () => {
             </div>
             <div>
               <Label>Daily Limit (minutes)</Label>
-              <Input type="number" min="1" placeholder="30" value={limitForm.dailyMinutes} onChange={e => setLimitForm(f => ({ ...f, dailyMinutes: e.target.value }))} />
+              <Input type="number" min="1" placeholder="30" value={limitForm.dailyMinutes} onChange={e => setLimitForm(f => ({ ...f, dailyMinutes: e.target.value }))} className="mt-1.5" />
             </div>
             <div>
               <Label>Monthly Limit (hours)</Label>
-              <Input type="number" min="1" placeholder="6" value={limitForm.monthlyHours} onChange={e => setLimitForm(f => ({ ...f, monthlyHours: e.target.value }))} />
+              <Input type="number" min="1" placeholder="6" value={limitForm.monthlyHours} onChange={e => setLimitForm(f => ({ ...f, monthlyHours: e.target.value }))} className="mt-1.5" />
             </div>
           </div>
           <DialogFooter>
