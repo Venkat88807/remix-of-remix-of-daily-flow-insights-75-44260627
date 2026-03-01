@@ -98,6 +98,81 @@ export type Database = {
         }
         Relationships: []
       }
+      app_usage_limits: {
+        Row: {
+          app_name: string
+          created_at: string
+          daily_limit_minutes: number | null
+          id: string
+          is_active: boolean
+          monthly_limit_minutes: number | null
+          package_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_name: string
+          created_at?: string
+          daily_limit_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          monthly_limit_minutes?: number | null
+          package_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          created_at?: string
+          daily_limit_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          monthly_limit_minutes?: number | null
+          package_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      app_usage_logs: {
+        Row: {
+          app_name: string
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          notes: string | null
+          package_name: string | null
+          source: string
+          started_at: string | null
+          updated_at: string
+          usage_date: string
+        }
+        Insert: {
+          app_name: string
+          created_at?: string
+          duration_seconds: number
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          package_name?: string | null
+          source?: string
+          started_at?: string | null
+          updated_at?: string
+          usage_date?: string
+        }
+        Update: {
+          app_name?: string
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          package_name?: string | null
+          source?: string
+          started_at?: string | null
+          updated_at?: string
+          usage_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
