@@ -20,6 +20,7 @@ import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
 import { SessionIntegrity } from '@/components/SessionIntegrity';
 import { WhitelistApps } from '@/components/WhitelistApps';
+import { AppUsagePage } from '@/components/AppUsagePage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -397,7 +398,7 @@ const Index = () => {
 
           {/* ===== APPS TAB ===== */}
           <TabsContent value="apps">
-            <WhitelistApps />
+            <AppUsagePage />
           </TabsContent>
         </Tabs>
 
