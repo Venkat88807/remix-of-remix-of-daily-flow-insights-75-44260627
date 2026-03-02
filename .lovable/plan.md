@@ -1,87 +1,69 @@
 
 
-## Plan: Fix 4 Issues + Add Logging Time Analysis
+# Unified "My Day" View — Timeline + Donut + Collapsed App Entries
 
-### 1. Add "Time Spent Logging" Analysis
+## Goal
+Track where every minute of your day goes, presented as:
+1. A **visual timeline** (vertical, time-ordered) merging both your activity logs and app usage logs
+2. A **donut chart** showing the full-day breakdown
+3. **Collapsed app entries** — e.g., 3 separate "YouTube" logs become one collapsible row showing total time + individual session times
 
-Currently, `AppSessionTimer` just shows a raw number (e.g., "12m 34s"). We'll add an `AppSessionAnalysis` component in the Analysis tab that:
+## Current State
+- **Activities** (work, coding, meals, etc.) are stored in localStorage via `useActivities`
+- **App usage** (Instagram, YouTube, etc.) is stored in Supabase via `useAppUsage`
+- These live in separate tabs ("Today" vs "Apps") with no unified view
+- The existing `TimeCharts` component already has a donut chart but only for activity categories
 
-- Shows daily logging time trends (chart of how much time you spent in the app each day over the past week)
-- Calculates average daily logging time
-- Shows "most active logging hour" (when you tend to open the app most)
-- Compares current week vs previous week logging time
-- Uses data already stored in `localStorage` via `useAppSessionTime` hook
+## Plan
 
-**Files:** New `src/components/AppSessionAnalysis.tsx`, modify `src/pages/Index.tsx` to add it to the Analysis tab.
+### 1. Create a Unified Day View component
+A new `UnifiedDayView` component that merges both data sources into one timeline:
 
----
+- **Data merging**: Combine activities (from localStorage) and app usage logs (from Supabase) for the selected date into a single sorted list
+- **Visual timeline**: Vertical timeline with time markers on the left (like 9:00, 9:30, 10:00...) and blocks on the right
+  - Activity blocks: colored by category (work, coding, meals, etc.)
+  - App usage blocks: colored by app with app icon/initial
+- **Collapsed app entries**: Group consecutive or repeated app entries (e.g., YouTube x3) into a single collapsible row using the Collapsible component
+  - Header shows: app name, total duration, count of sessions
+  - Expand to see individual session times (e.g., "09:15 - 09:30", "11:00 - 11:20")
 
-### 2. Fix Heatmap Issues
+### 2. Full-Day Donut Chart
+A donut chart showing all time accounted for:
+- Inner ring or single ring with segments for each category + each app
+- Center text: total tracked time vs 24h (e.g., "14h 30m / 24h")
+- Untracked time shown as a grey "Gap" segment
+- Legend below with color-coded entries
 
-The heatmap has two problems:
+### 3. Integration into Today Tab
+Replace or augment the current Today tab layout:
+- Move the unified timeline into the main card where `ActivityTimeline` currently sits
+- Add a toggle/tabs: "Timeline" vs "List" so users can switch between the new visual timeline and the existing list view
+- Place the full-day donut chart alongside (or above on mobile)
 
-- **Daily heatmap**: The `hourStart`/`hourEnd` dates are constructed from the activity's start time instead of the selected date, causing incorrect hour buckets when activities span midnight or are on different dates
-- **Weekly heatmap**: Same date construction bug — uses `dayDate` correctly but the overlap calculation can fail for activities that span multiple days
+### 4. Collapsible Logic for App Usage
+In the app usage section (both in unified timeline and the Apps tab):
+- Group logs by `appName` for the selected date
+- Show one row per app with total time
+- Expandable to show individual sessions with timestamps
+- Each session row shows start time, end time, duration
 
-**Fix:** Construct `hourStart`/`hourEnd` using the correct target date (from `selectedDate` for daily, from `dayDate` for weekly), ensuring the year/month/day components are correct.
+## Technical Details
 
-**Files:** Modify `src/components/ProductivityHeatmap.tsx`
+### Files to create:
+- `src/components/UnifiedDayView.tsx` — main unified view with timeline + donut
 
----
+### Files to modify:
+- `src/pages/Index.tsx` — integrate `UnifiedDayView` into the Today tab, pass both activity and app usage data
+- `src/components/AppUsagePage.tsx` — add collapsible grouping to the daily Activity Log section
+- `src/components/TimeCharts.tsx` — enhance to accept optional app usage data for the combined donut chart
 
-### 3. Fix Dark Mode Not Persisting
+### Data flow:
+- `useActivities(selectedDate)` provides activity entries
+- `useAppUsage()` provides app usage logs
+- Both are passed to `UnifiedDayView` which merges, sorts by time, groups apps, and renders
 
-Currently dark mode state is initialized by checking if `dark` class exists on `<html>`, but nothing saves the preference. When you close the app, it resets.
-
-**Fix:** Save dark mode preference to `localStorage` on toggle, and read it on initialization.
-
-**Files:** Modify `src/pages/Index.tsx` — update `isDark` state initialization and the toggle effect.
-
----
-
-### 4. Optimize UI for Installed App (Mobile APK)
-
-The current layout isn't optimized for mobile app viewport. Issues include:
-
-- Header buttons too close together on small screens
-- Tab list may overflow
-- Cards in the grid don't stack properly on narrow screens
-- Heatmap cells too small and overflow horizontally
-- Date navigation buttons cramped
-
-**Fixes:**
-- Add proper mobile-first responsive classes
-- Make header icons wrap or use a dropdown menu on small screens
-- Ensure single-column layout on mobile for all cards
-- Add `viewport` meta tag optimization for installed app
-- Add touch-friendly tap targets (min 44px)
-- Reduce padding/margins on mobile
-- Make heatmap cells responsive
-
-**Files:** Modify `src/pages/Index.tsx`, `src/components/ProductivityHeatmap.tsx`, `src/index.css`, `index.html`
-
----
-
-### 5. About the Accessibility Service (Native Code)
-
-The native Android code (Java files for Accessibility Service, AppUsage Plugin, Persistent Notification Plugin) **cannot be created by me directly** — the `android/` folder only exists on your local machine after running `npx cap add android`.
-
-The complete guide is already in `docs/NATIVE_INTEGRATION_GUIDE.md` with copy-paste-ready code. You need to:
-1. Open the Android project in Android Studio
-2. Create the Java files in the correct package directory
-3. Update `AndroidManifest.xml` and `strings.xml`
-4. Register plugins in `MainActivity.java`
-
-This is the only way — there is no workaround for native platform code.
-
----
-
-### Technical Summary
-
-| Change | File(s) | Type |
-|--------|---------|------|
-| Logging time analysis | New `AppSessionAnalysis.tsx`, `Index.tsx` | New component |
-| Heatmap fix | `ProductivityHeatmap.tsx` | Bug fix |
-| Dark mode persistence | `Index.tsx` | Bug fix |
-| Mobile UI optimization | `Index.tsx`, `ProductivityHeatmap.tsx`, `index.css`, `index.html` | Enhancement |
+### Recommendations:
+- **Gap detection**: Show grey "untracked" blocks in the timeline for periods with no logged activity or app usage — this helps you see where minutes are leaking
+- **24h coverage meter**: A simple progress bar showing how much of the day is accounted for (e.g., "You've tracked 16h 20m of 24h")
+- **Quick-add from gaps**: Tapping a gap block opens the manual activity input pre-filled with that time range
 
