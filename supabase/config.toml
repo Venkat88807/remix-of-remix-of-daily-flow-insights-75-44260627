@@ -1,1 +1,4 @@
 project_id = "ucrtcohxwsgeiwbeibad"
+
+[functions.parse-app-usage-screenshot]
+verify_jwt = false
