@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { format } from 'date-fns';
-import { Smartphone, Plus, Target, BarChart3, Trash2, Clock, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
+import { Smartphone, Plus, Target, BarChart3, Trash2, Clock, TrendingUp, Zap, AlertTriangle, Camera, Upload, Loader2, Check, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { toast } from 'sonner';
 import { useAppUsage } from '@/hooks/useAppUsage';
 import { WhitelistApps } from '@/components/WhitelistApps';
+import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const COLORS = [
   'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))',
@@ -37,6 +39,11 @@ export const AppUsagePage: React.FC = () => {
 
   const [showAddLog, setShowAddLog] = useState(false);
   const [showAddLimit, setShowAddLimit] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [parsedEntries, setParsedEntries] = useState<Array<{ appName: string; time: string; durationSeconds: number; selected: boolean }>>([]);
+  const [importDate, setImportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [logForm, setLogForm] = useState({ appName: '', hours: '', minutes: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
   const [limitForm, setLimitForm] = useState({ appName: '', dailyMinutes: '', monthlyHours: '' });
 
@@ -65,6 +72,53 @@ export const AppUsagePage: React.FC = () => {
       setShowAddLimit(false);
       setLimitForm({ appName: '', dailyMinutes: '', monthlyHours: '' });
     }
+  };
+
+  const handleScreenshotParse = async (file: File) => {
+    setImporting(true);
+    setParsedEntries([]);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke('parse-app-usage-screenshot', {
+        body: { imageBase64: base64, date: importDate },
+      });
+
+      if (error) throw error;
+      if (!data?.entries?.length) {
+        toast.info('No usable entries found in screenshot (0-sec entries are filtered)');
+        setImporting(false);
+        return;
+      }
+
+      setParsedEntries(data.entries.map((e: any) => ({ ...e, selected: true })));
+      setShowImport(true);
+    } catch (err) {
+      console.error('Screenshot parse error:', err);
+      toast.error('Failed to parse screenshot');
+    }
+    setImporting(false);
+  };
+
+  const handleConfirmImport = async () => {
+    const selected = parsedEntries.filter(e => e.selected);
+    if (!selected.length) { toast.error('Select at least one entry'); return; }
+
+    setImporting(true);
+    let added = 0;
+    for (const entry of selected) {
+      const ok = await addManualLog(entry.appName, entry.durationSeconds / 60, importDate, `Imported from screenshot (${entry.time})`);
+      if (ok) added++;
+    }
+    toast.success(`Imported ${added} entries`);
+    setShowImport(false);
+    setParsedEntries([]);
+    setImporting(false);
   };
 
   const totalDailySeconds = dailySummary.reduce((sum, a) => sum + a.totalSeconds, 0);
@@ -104,9 +158,30 @@ export const AppUsagePage: React.FC = () => {
               onChange={e => setSelectedDate(e.target.value)}
               className="w-auto text-sm"
             />
-            <Button size="sm" onClick={() => setShowAddLog(true)} className="gap-1.5">
-              <Plus className="h-4 w-4" /> Log Usage
-            </Button>
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => {
+                  const files = e.target.files;
+                  if (files?.length) {
+                    setImportDate(selectedDate);
+                    handleScreenshotParse(files[0]);
+                  }
+                  e.target.value = '';
+                }}
+              />
+              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importing} className="gap-1.5">
+                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                Import
+              </Button>
+              <Button size="sm" onClick={() => setShowAddLog(true)} className="gap-1.5">
+                <Plus className="h-4 w-4" /> Log
+              </Button>
+            </div>
           </div>
 
           {/* Quick Stats */}
@@ -499,6 +574,59 @@ export const AppUsagePage: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddLimit(false)}>Cancel</Button>
             <Button onClick={handleAddLimit}>Save Limit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Screenshot Dialog */}
+      <Dialog open={showImport} onOpenChange={setShowImport}>
+        <DialogContent className="max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-primary" /> Import from Screenshot
+            </DialogTitle>
+            <DialogDescription>
+              {parsedEntries.length} entries found for {importDate}. Deselect any you don't want.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[50vh]">
+            <div className="space-y-1 pr-3">
+              {parsedEntries.map((entry, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between py-2.5 px-3 rounded-lg cursor-pointer transition-colors ${
+                    entry.selected ? 'bg-primary/5 border border-primary/20' : 'bg-muted/30 opacity-50'
+                  }`}
+                  onClick={() => {
+                    setParsedEntries(prev =>
+                      prev.map((e, j) => j === i ? { ...e, selected: !e.selected } : e)
+                    );
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      entry.selected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
+                    }`}>
+                      {entry.selected && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div>
+                      <span className="font-medium text-sm">{entry.appName}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{entry.time}</span>
+                    </div>
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums text-primary">
+                    {fmtDur(entry.durationSeconds)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowImport(false); setParsedEntries([]); }}>Cancel</Button>
+            <Button onClick={handleConfirmImport} disabled={importing || !parsedEntries.some(e => e.selected)}>
+              {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Import {parsedEntries.filter(e => e.selected).length} entries
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
