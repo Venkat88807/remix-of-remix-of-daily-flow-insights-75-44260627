@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Smartphone, Plus, Target, BarChart3, Trash2, Clock, TrendingUp, Zap, AlertTriangle, Camera, Upload, Loader2, Check, X } from 'lucide-react';
+import { Smartphone, Plus, Target, BarChart3, Trash2, Clock, TrendingUp, Zap, AlertTriangle, Camera, Upload, Loader2, Check, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useAppUsage } from '@/hooks/useAppUsage';
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const COLORS = [
   'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))',
@@ -29,6 +30,55 @@ function fmtDur(seconds: number): string {
   const rem = mins % 60;
   return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
 }
+
+const CollapsibleAppGroup: React.FC<{
+  appName: string;
+  logs: Array<{ id: string; durationSeconds: number; source: string; notes?: string; startedAt?: string; endedAt?: string }>;
+  totalSeconds: number;
+  color: string;
+  onDeleteLog: (id: string) => void;
+}> = ({ appName, logs, totalSeconds, color, onDeleteLog }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="w-full">
+        <div className="flex items-center justify-between text-sm py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+            <span className="font-medium">{appName}</span>
+            <span className="text-xs text-muted-foreground">×{logs.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold tabular-nums">{fmtDur(totalSeconds)}</span>
+            {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+          </div>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="ml-5 border-l-2 border-border pl-3 space-y-0.5">
+          {logs.map(log => (
+            <div key={log.id} className="flex items-center justify-between text-xs py-1.5 px-2 rounded hover:bg-muted/30">
+              <div>
+                <span className="text-muted-foreground">{fmtDur(log.durationSeconds)}</span>
+                {log.startedAt && (
+                  <span className="ml-2 text-muted-foreground">
+                    {new Date(log.startedAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    {log.endedAt && ` – ${new Date(log.endedAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: true })}`}
+                  </span>
+                )}
+                {log.source === 'manual' && <span className="bg-muted px-1 py-0.5 rounded ml-1">manual</span>}
+                {log.notes && <p className="text-muted-foreground mt-0.5">{log.notes}</p>}
+              </div>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDeleteLog(log.id); }}>
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 export const AppUsagePage: React.FC = () => {
   const {
@@ -324,39 +374,66 @@ export const AppUsagePage: React.FC = () => {
             </Card>
           )}
 
-          {/* Logs */}
-          {logs.filter(l => l.usageDate === selectedDate).length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" /> Activity Log
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                {logs.filter(l => l.usageDate === selectedDate).map(log => (
-                  <div key={log.id} className="flex items-center justify-between text-sm py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors border-b last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: COLORS[allAppNames.indexOf(log.appName) % COLORS.length] }}
+          {/* Grouped Activity Log */}
+          {(() => {
+            const dayLogs = logs.filter(l => l.usageDate === selectedDate);
+            if (dayLogs.length === 0) return null;
+            
+            // Group by app name
+            const grouped = new Map<string, typeof dayLogs>();
+            dayLogs.forEach(log => {
+              const existing = grouped.get(log.appName) || [];
+              existing.push(log);
+              grouped.set(log.appName, existing);
+            });
+
+            return (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" /> Activity Log
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  {Array.from(grouped.entries()).map(([appName, appLogs]) => {
+                    const totalSecs = appLogs.reduce((s, l) => s + l.durationSeconds, 0);
+                    const colorIdx = allAppNames.indexOf(appName) % COLORS.length;
+                    
+                    if (appLogs.length === 1) {
+                      const log = appLogs[0];
+                      return (
+                        <div key={log.id} className="flex items-center justify-between text-sm py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors border-b last:border-0">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[colorIdx] }} />
+                            <div>
+                              <span className="font-medium">{log.appName}</span>
+                              <span className="text-muted-foreground ml-2">{fmtDur(log.durationSeconds)}</span>
+                              {log.source === 'manual' && <span className="text-xs bg-muted px-1.5 py-0.5 rounded ml-1.5">manual</span>}
+                              {log.notes && <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>}
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteLog(log.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <CollapsibleAppGroup
+                        key={appName}
+                        appName={appName}
+                        logs={appLogs}
+                        totalSeconds={totalSecs}
+                        color={COLORS[colorIdx]}
+                        onDeleteLog={deleteLog}
                       />
-                      <div>
-                        <span className="font-medium">{log.appName}</span>
-                        <span className="text-muted-foreground ml-2">{fmtDur(log.durationSeconds)}</span>
-                        {log.source === 'manual' && (
-                          <span className="text-xs bg-muted px-1.5 py-0.5 rounded ml-1.5">manual</span>
-                        )}
-                        {log.notes && <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>}
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteLog(log.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            );
+          })()}
         </TabsContent>
 
         {/* ===== LIMITS ===== */}
