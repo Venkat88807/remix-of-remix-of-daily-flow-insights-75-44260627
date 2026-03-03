@@ -21,6 +21,8 @@ import { YearlyStats } from '@/components/YearlyStats';
 import { SessionIntegrity } from '@/components/SessionIntegrity';
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { AppUsagePage } from '@/components/AppUsagePage';
+import { UnifiedDayView } from '@/components/UnifiedDayView';
+import { useAppUsage } from '@/hooks/useAppUsage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -76,6 +78,8 @@ const Index = () => {
     datesWithData,
     today,
   } = useActivities(selectedDate);
+
+  const { logs: appUsageLogs } = useAppUsage();
 
   const {
     pendingDistraction,
@@ -332,6 +336,9 @@ const Index = () => {
 
             <GapDetectionDialog open={showGapDialog} onOpenChange={setShowGapDialog} gap={pendingGap} onFillGap={handleFillGap} onSkip={handleSkipGap} />
             <DistractionPrompt distraction={pendingDistraction} onRespond={handleDistractionRespond} />
+
+            {/* Unified Day View */}
+            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} />
 
             <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
               <Card className="lg:row-span-2">
