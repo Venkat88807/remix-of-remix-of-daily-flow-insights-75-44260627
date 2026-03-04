@@ -91,7 +91,7 @@ export const AppUsagePage: React.FC = () => {
   const [showAddLimit, setShowAddLimit] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [parsedEntries, setParsedEntries] = useState<Array<{ appName: string; time: string; durationSeconds: number; selected: boolean }>>([]);
+  const [parsedEntries, setParsedEntries] = useState<Array<{ appName: string; time?: string | null; durationSeconds: number; selected: boolean }>>([]);
   const [importDate, setImportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logForm, setLogForm] = useState({ appName: '', hours: '', minutes: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
@@ -162,7 +162,7 @@ export const AppUsagePage: React.FC = () => {
     setImporting(true);
     let added = 0;
     for (const entry of selected) {
-      const ok = await addManualLog(entry.appName, entry.durationSeconds / 60, importDate, `Imported from screenshot (${entry.time})`);
+      const ok = await addManualLog(entry.appName, entry.durationSeconds / 60, importDate, entry.time ? `Imported from screenshot (${entry.time})` : 'Imported from screenshot');
       if (ok) added++;
     }
     toast.success(`Imported ${added} entries`);
@@ -688,7 +688,7 @@ export const AppUsagePage: React.FC = () => {
                     </div>
                     <div>
                       <span className="font-medium text-sm">{entry.appName}</span>
-                      <span className="text-xs text-muted-foreground ml-2">{entry.time}</span>
+                      {entry.time ? <span className="text-xs text-muted-foreground ml-2">{entry.time}</span> : <span className="text-xs text-muted-foreground ml-2">time not shown</span>}
                     </div>
                   </div>
                   <span className="text-sm font-semibold tabular-nums text-primary">

@@ -6,6 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function parseDurationSeconds(durationSeconds: unknown, durationText: unknown): number {
+  if (typeof durationSeconds === "number" && Number.isFinite(durationSeconds) && durationSeconds > 0) {
+    return Math.round(durationSeconds);
+  }
+
+  const raw = typeof durationText === "string" ? durationText.trim().toLowerCase() : "";
+  if (!raw) return 0;
+
+  let total = 0;
+
+  const hourMatches = raw.matchAll(/(\d+)\s*(h|hr|hrs|hour|hours)\b/g);
+  for (const m of hourMatches) total += Number(m[1]) * 3600;
+
+  const minuteMatches = raw.matchAll(/(\d+)\s*(m|min|mins|minute|minutes)\b/g);
+  for (const m of minuteMatches) total += Number(m[1]) * 60;
+
+  const secondMatches = raw.matchAll(/(\d+)\s*(s|sec|secs|second|seconds)\b/g);
+  for (const m of secondMatches) total += Number(m[1]);
+
+  if (total > 0) return total;
+
+  const clock = raw.match(/\b(\d{1,2}):(\d{2})(?::(\d{2}))?\b/);
+  if (clock) {
+    const a = Number(clock[1]);
+    const b = Number(clock[2]);
+    const c = clock[3] ? Number(clock[3]) : undefined;
+    if (c !== undefined) return a * 3600 + b * 60 + c;
+    return a * 60 + b;
+  }
+
+  return 0;
+}
+
+function normalizeTime(time: unknown): string | null {
+  if (typeof time !== "string") return null;
+  const trimmed = time.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -29,7 +68,6 @@ serve(async (req) => {
       );
     }
 
-    // Clean base64 - remove data URL prefix if present
     const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -39,29 +77,27 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "system",
-            content: `You extract app usage timeline data from screenshots of phone usage tracking apps.
+            content: `Extract EVERY visible app usage row from screenshots of app-usage trackers.
 
-Extract each entry you can see. For each entry extract:
-- appName: the app name (e.g. "YouTube", "Chrome", "Instagram")
-- time: the time shown (HH:MM format, 24h)
-- durationSeconds: duration in seconds. Convert "01 mins 13 sec" to 73, "36 sec" to 36, "00 sec" to 0, etc.
-
-IMPORTANT: 
-- Skip entries with 0 seconds duration (shown as "00 sec") — they're noise
-- Skip system apps like "Permission controller", "Meta App Manager", launcher apps
-- Keep real apps: YouTube, Chrome, Instagram, Telegram, WhatsApp, Photos, etc.
-- If you can't determine the duration, set it to 0 and it will be skipped`,
+Rules:
+- Capture all real apps you can read, including long sessions (30m+)
+- Do not collapse duplicates: if an app appears on multiple rows, return multiple entries
+- Time can be null if not visible in the screenshot
+- durationText must be the exact text shown (examples: "30 min", "01 mins 13 sec", "1h 12m", "00:42")
+- durationSeconds should be the converted value when possible
+- Skip only rows that are explicitly zero duration ("0 sec", "00 sec")
+- If uncertain about an app name, still include best readable text rather than dropping the row`,
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Extract the app usage timeline from this screenshot. Date context: ${date || "today"}`,
+                text: `Extract all visible app usage entries from this screenshot. Date context: ${date || "today"}`,
               },
               {
                 type: "image_url",
@@ -76,8 +112,8 @@ IMPORTANT:
           {
             type: "function",
             function: {
-              name: "extract_usage_timeline",
-              description: "Extract app usage entries from a screenshot",
+              name: "extract_usage_entries",
+              description: "Extract every visible app usage row from screenshot",
               parameters: {
                 type: "object",
                 properties: {
@@ -86,11 +122,12 @@ IMPORTANT:
                     items: {
                       type: "object",
                       properties: {
-                        appName: { type: "string", description: "App name" },
-                        time: { type: "string", description: "Time in HH:MM 24h format" },
-                        durationSeconds: { type: "integer", description: "Duration in seconds" },
+                        appName: { type: "string", description: "App name exactly as shown" },
+                        time: { type: ["string", "null"], description: "Displayed time if visible, otherwise null" },
+                        durationText: { type: "string", description: "Raw duration string as displayed" },
+                        durationSeconds: { type: ["integer", "null"], description: "Duration converted to seconds if possible" },
                       },
-                      required: ["appName", "time", "durationSeconds"],
+                      required: ["appName", "durationText"],
                       additionalProperties: false,
                     },
                   },
@@ -101,7 +138,7 @@ IMPORTANT:
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "extract_usage_timeline" } },
+        tool_choice: { type: "function", function: { name: "extract_usage_entries" } },
       }),
     });
 
@@ -137,10 +174,23 @@ IMPORTANT:
     }
 
     const parsed = JSON.parse(toolCall.function.arguments);
-    // Filter out 0-second entries
-    const entries = (parsed.entries || []).filter(
-      (e: any) => e.durationSeconds > 0
-    );
+    const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : [];
+
+    const seen = new Set<string>();
+    const entries = rawEntries
+      .map((entry: any) => {
+        const appName = typeof entry?.appName === "string" ? entry.appName.trim() : "";
+        const durationSeconds = parseDurationSeconds(entry?.durationSeconds, entry?.durationText);
+        const time = normalizeTime(entry?.time);
+        return { appName, durationSeconds, time };
+      })
+      .filter((entry: { appName: string; durationSeconds: number; time: string | null }) => {
+        if (!entry.appName || entry.durationSeconds <= 0) return false;
+        const key = `${entry.appName.toLowerCase()}|${entry.time ?? ""}|${entry.durationSeconds}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     console.log(`Extracted ${entries.length} entries from screenshot`);
 
