@@ -84,7 +84,7 @@ export const AppUsagePage: React.FC = () => {
   const {
     dailySummary, monthlyStats, allAppNames, limits,
     addManualLog, deleteLog, upsertLimit, deleteLimit,
-    selectedDate, setSelectedDate, logs, loading,
+    selectedDate, setSelectedDate, logs, loading, loadLogs,
   } = useAppUsage();
 
   const [showAddLog, setShowAddLog] = useState(false);
@@ -160,11 +160,18 @@ export const AppUsagePage: React.FC = () => {
     if (!selected.length) { toast.error('Select at least one entry'); return; }
 
     setImporting(true);
-    let added = 0;
-    for (const entry of selected) {
-      const ok = await addManualLog(entry.appName, entry.durationSeconds / 60, importDate, entry.time ? `Imported from screenshot (${entry.time})` : 'Imported from screenshot');
-      if (ok) added++;
-    }
+    // Batch insert all selected entries at once
+    const rows = selected.map(entry => ({
+      app_name: entry.appName,
+      duration_seconds: entry.durationSeconds,
+      usage_date: importDate,
+      source: 'manual' as const,
+      notes: entry.time ? `Imported from screenshot (${entry.time})` : 'Imported from screenshot',
+    }));
+
+    const { error } = await supabase.from('app_usage_logs').insert(rows);
+    if (!error) await loadLogs();
+    const added = error ? 0 : rows.length;
     toast.success(`Imported ${added} entries`);
     setShowImport(false);
     setParsedEntries([]);
