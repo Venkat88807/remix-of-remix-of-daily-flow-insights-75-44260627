@@ -117,20 +117,6 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         durationSeconds: log.durationSeconds,
       });
 
-      // Add to timeline if has time info
-      if (log.startedAt) {
-        const start = new Date(log.startedAt);
-        const end = log.endedAt ? new Date(log.endedAt) : new Date(start.getTime() + log.durationSeconds * 1000);
-        allEntries.push({
-          id: log.id,
-          type: 'app',
-          label: log.appName,
-          startTime: start,
-          endTime: end,
-          durationMinutes: log.durationSeconds / 60,
-          color,
-        });
-      }
     });
 
     // Sort by start time
