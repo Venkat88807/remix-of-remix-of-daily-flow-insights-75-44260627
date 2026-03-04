@@ -38,9 +38,12 @@ export function useAppUsage() {
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
 
   const loadLogs = useCallback(async () => {
+    // Only load logs from the last 90 days for performance
+    const cutoff = format(subDays(new Date(), 90), 'yyyy-MM-dd');
     const { data, error } = await supabase
       .from('app_usage_logs')
       .select('*')
+      .gte('usage_date', cutoff)
       .order('usage_date', { ascending: false });
 
     if (!error && data) {

@@ -77,7 +77,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
@@ -90,6 +90,7 @@ Rules:
 - durationText must be the exact text shown (examples: "30 min", "01 mins 13 sec", "1h 12m", "00:42")
 - durationSeconds should be the converted value when possible
 - Skip only rows that are explicitly zero duration ("0 sec", "00 sec")
+- Skip system/OS entries like "Screen locked", "Screen on", "Screen off", "Device idle", "Phone locked", "Screen timeout", any launcher/home screen entries, keyboard apps, or system UI elements — these are NOT app usage
 - If uncertain about an app name, still include best readable text rather than dropping the row`,
           },
           {
@@ -186,7 +187,18 @@ Rules:
       })
       .filter((entry: { appName: string; durationSeconds: number; time: string | null }) => {
         if (!entry.appName || entry.durationSeconds <= 0) return false;
-        const key = `${entry.appName.toLowerCase()}|${entry.time ?? ""}|${entry.durationSeconds}`;
+        // Filter out system/OS entries
+        const lower = entry.appName.toLowerCase();
+        const systemPatterns = [
+          "screen locked", "screen on", "screen off", "screen timeout",
+          "device idle", "phone locked", "device locked",
+          "launcher", "home screen", "system ui", "systemui",
+          "keyboard", "gboard", "swiftkey", "samsung keyboard",
+          "one ui home", "pixel launcher", "nova launcher",
+          "android system", "com.android", "status bar",
+        ];
+        if (systemPatterns.some(p => lower.includes(p))) return false;
+        const key = `${lower}|${entry.time ?? ""}|${entry.durationSeconds}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
