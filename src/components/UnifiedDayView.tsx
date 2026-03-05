@@ -1,12 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { ChevronDown, ChevronRight, Clock, Layers } from 'lucide-react';
+import { Clock, Layers } from 'lucide-react';
 import { Activity, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/types/activity';
 import { AppUsageLog } from '@/hooks/useAppUsage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const APP_COLORS = [
@@ -57,16 +55,6 @@ function getAppColor(appName: string, index: number): string {
 }
 
 export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate }) => {
-  const [expandedApps, setExpandedApps] = useState<Set<string>>(new Set());
-
-  const toggleApp = (appName: string) => {
-    setExpandedApps(prev => {
-      const next = new Set(prev);
-      if (next.has(appName)) next.delete(appName);
-      else next.add(appName);
-      return next;
-    });
-  };
 
   // Build unified entries
   const { entries, appGroups, donutData, totalTrackedMinutes } = useMemo(() => {
@@ -257,44 +245,22 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
           </CardContent>
         </Card>
 
-        {/* Collapsed App Groups */}
         {appGroups.length > 0 && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" /> App Usage Summary
+                <Clock className="h-4 w-4 text-primary" /> Screen Time
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
               {appGroups.map(group => (
-                <Collapsible key={group.appName} open={expandedApps.has(group.appName)} onOpenChange={() => toggleApp(group.appName)}>
-                  <CollapsibleTrigger className="w-full">
-                    <div className="flex items-center gap-2.5 py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                      <div className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold text-primary-foreground" style={{ backgroundColor: group.color }}>
-                        {group.appName.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 text-left min-w-0">
-                        <span className="text-sm font-medium truncate block">{group.appName}</span>
-                        <span className="text-xs text-muted-foreground">{group.sessions.length} session{group.sessions.length !== 1 ? 's' : ''}</span>
-                      </div>
-                      <span className="text-sm font-bold tabular-nums">{fmtDur(group.totalSeconds / 60)}</span>
-                      {expandedApps.has(group.appName) ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="ml-10 space-y-0.5 pb-2">
-                      {group.sessions.map((s, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs text-muted-foreground py-1 px-2 rounded hover:bg-muted/30">
-                          <span>
-                            {s.startTime ? fmtTime(new Date(s.startTime)) : '—'}
-                            {s.endTime ? ` – ${fmtTime(new Date(s.endTime))}` : ''}
-                          </span>
-                          <span className="tabular-nums">{fmtDur(s.durationSeconds / 60)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                <div key={group.appName} className="flex items-center gap-2.5 py-2 px-2 rounded-lg">
+                  <div className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold text-primary-foreground" style={{ backgroundColor: group.color }}>
+                    {group.appName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium truncate flex-1">{group.appName}</span>
+                  <span className="text-sm font-bold tabular-nums">{fmtDur(group.totalSeconds / 60)}</span>
+                </div>
               ))}
             </CardContent>
           </Card>
