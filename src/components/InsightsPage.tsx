@@ -1,13 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, Legend,
 } from 'recharts';
 import { format, subDays, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { DayData, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
-import { TrendingUp, TrendingDown, Minus, Clock, CalendarDays, Flame, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Clock, CalendarDays, Flame, BarChart3, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface InsightsPageProps {
   allData: DayData[];
@@ -204,57 +206,8 @@ const PeriodView: React.FC<InsightsPageProps> = ({ allData, distractionHistory }
         </Card>
       )}
 
-      {/* Cumulative Time Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Cumulative Time</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.cumulativeData}>
-                <defs>
-                  <linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="day" tick={{ fontSize: 9 }} className="fill-muted-foreground" />
-                <YAxis tick={{ fontSize: 9 }} className="fill-muted-foreground" tickFormatter={v => `${v}h`} />
-                <Tooltip formatter={(v: number) => [`${v}h`, 'Total']} contentStyle={{ fontSize: 11 }} />
-                <Area type="stepAfter" dataKey="total" stroke="hsl(var(--chart-2))" fill="url(#cumGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Avg Focus Time by Hour */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Avg Focus Time (min)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.hourlyAvg}>
-                <defs>
-                  <linearGradient id="focusGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="hour" tick={{ fontSize: 9 }} className="fill-muted-foreground" />
-                <YAxis tick={{ fontSize: 9 }} className="fill-muted-foreground" />
-                <Tooltip formatter={(v: number) => [`${v} min`, 'Avg Focus']} contentStyle={{ fontSize: 11 }} />
-                <Area type="monotone" dataKey="avgMin" stroke="hsl(var(--chart-3))" fill="url(#focusGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Avg Time per Day of Week */}
       <Card>
@@ -520,10 +473,137 @@ const TrendView: React.FC<InsightsPageProps> = ({ allData }) => {
   );
 };
 
+// ===== REPORT GENERATOR =====
+function generateReport(allData: DayData[]): string {
+  const now = new Date();
+  const lines: string[] = [];
+  lines.push('═══════════════════════════════════════');
+  lines.push('       TIME TRACKER — ACTIVITY REPORT');
+  lines.push(`       Generated: ${format(now, 'MMMM d, yyyy h:mm a')}`);
+  lines.push('═══════════════════════════════════════');
+  lines.push('');
+
+  // Last 28 days summary
+  const periodStart = subDays(now, 27);
+  const days = eachDayOfInterval({ start: periodStart, end: now });
+  let totalMin = 0;
+  let daysWithData = 0;
+  const catMins: Record<string, number> = {};
+  const dailyTotals: { date: string; minutes: number }[] = [];
+
+  days.forEach(day => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const dayData = allData.find(d => d.date === dateStr);
+    let dayMin = 0;
+    if (dayData && dayData.activities.length > 0) {
+      daysWithData++;
+      dayData.activities.forEach(a => {
+        const dur = a.duration || 0;
+        dayMin += dur;
+        catMins[a.category] = (catMins[a.category] || 0) + dur;
+      });
+    }
+    totalMin += dayMin;
+    dailyTotals.push({ date: dateStr, minutes: dayMin });
+  });
+
+  const avgDaily = daysWithData > 0 ? totalMin / daysWithData : 0;
+  const maxDay = dailyTotals.reduce((max, d) => d.minutes > max.minutes ? d : max, dailyTotals[0]);
+
+  lines.push('📊 LAST 28 DAYS OVERVIEW');
+  lines.push('───────────────────────────────────────');
+  lines.push(`  Total tracked time:   ${fmtHMS(totalMin)}`);
+  lines.push(`  Days with entries:    ${daysWithData} / ${days.length}`);
+  lines.push(`  Daily average:        ${fmtHMS(avgDaily)}`);
+  lines.push(`  Most active day:      ${maxDay?.date} (${fmtDur(maxDay?.minutes || 0)})`);
+  lines.push('');
+
+  // Category breakdown
+  const sortedCats = Object.entries(catMins).sort((a, b) => b[1] - a[1]);
+  lines.push('📂 CATEGORY BREAKDOWN');
+  lines.push('───────────────────────────────────────');
+  const maxCatLen = Math.max(...sortedCats.map(([c]) => (CATEGORY_LABELS[c as ActivityCategory] || c).length));
+  sortedCats.forEach(([cat, mins]) => {
+    const label = (CATEGORY_LABELS[cat as ActivityCategory] || cat).padEnd(maxCatLen + 2);
+    const pct = totalMin > 0 ? Math.round((mins / totalMin) * 100) : 0;
+    const bar = '█'.repeat(Math.round(pct / 3)) + '░'.repeat(Math.max(0, 33 - Math.round(pct / 3)));
+    lines.push(`  ${label} ${fmtDur(mins).padStart(8)}  ${String(pct).padStart(3)}%  ${bar}`);
+  });
+  lines.push('');
+
+  // Weekly breakdown
+  lines.push('📅 WEEKLY BREAKDOWN');
+  lines.push('───────────────────────────────────────');
+  for (let i = 0; i < 4; i++) {
+    const weekEnd = subDays(now, i * 7);
+    const weekStart = subDays(weekEnd, 6);
+    const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    let weekTotal = 0;
+    let weekActive = 0;
+    weekDays.forEach(day => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const dayData = allData.find(d => d.date === dateStr);
+      if (dayData && dayData.activities.length > 0) {
+        weekActive++;
+        dayData.activities.forEach(a => { weekTotal += a.duration || 0; });
+      }
+    });
+    const label = `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d')}`;
+    lines.push(`  ${label.padEnd(22)} ${fmtHMS(weekTotal).padStart(9)}   (${weekActive} days active)`);
+  }
+  lines.push('');
+
+  // Daily log for last 7 days
+  lines.push('📋 LAST 7 DAYS DETAIL');
+  lines.push('───────────────────────────────────────');
+  const last7 = days.slice(-7);
+  last7.forEach(day => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const dayData = allData.find(d => d.date === dateStr);
+    lines.push(`  ${format(day, 'EEE, MMM d')}:`);
+    if (!dayData || dayData.activities.length === 0) {
+      lines.push('    (no entries)');
+    } else {
+      const sorted = [...dayData.activities].sort((a, b) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+      );
+      sorted.forEach(a => {
+        const start = format(new Date(a.startTime), 'h:mm a');
+        const end = a.endTime ? format(new Date(a.endTime), 'h:mm a') : 'ongoing';
+        const cat = CATEGORY_LABELS[a.category as ActivityCategory] || a.category;
+        lines.push(`    ${start} → ${end}  ${a.description} [${cat}] ${fmtDur(a.duration || 0)}`);
+      });
+    }
+    lines.push('');
+  });
+
+  lines.push('═══════════════════════════════════════');
+  lines.push('  End of Report');
+  lines.push('═══════════════════════════════════════');
+  return lines.join('\n');
+}
+
 // ===== MAIN INSIGHTS =====
 export const InsightsPage: React.FC<InsightsPageProps> = (props) => {
+  const handleExportReport = useCallback(() => {
+    const report = generateReport(props.allData);
+    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `time-tracker-report-${format(new Date(), 'yyyy-MM-dd')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Report exported!');
+  }, [props.allData]);
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={handleExportReport} className="gap-2">
+          <FileText className="h-4 w-4" /> Export Report
+        </Button>
+      </div>
       <PeriodView {...props} />
       <MonthView {...props} />
       <TrendView {...props} />

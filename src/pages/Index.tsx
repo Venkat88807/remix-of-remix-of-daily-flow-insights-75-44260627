@@ -14,7 +14,7 @@ import { DistractionPrompt } from '@/components/DistractionPrompt';
 import { AppSessionTimer } from '@/components/AppSessionTimer';
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
-import { ProductivityHeatmap } from '@/components/ProductivityHeatmap';
+
 import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
@@ -358,7 +358,6 @@ const Index = () => {
               <TimeCharts activities={activities} />
               <AppSessionTimer selectedDate={selectedDate} isToday={isViewingToday} />
               <SessionIntegrity activities={activities} distractionHistory={distractionHistory} />
-              <ProductivityHeatmap allData={allData} distractionHistory={distractionHistory} selectedDate={selectedDate} mode="daily" />
               <DailyInsights activities={activities} date={selectedDate} />
             </div>
           </TabsContent>
@@ -384,7 +383,6 @@ const Index = () => {
                   <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}>Next →</Button>
                 </div>
                 <WeeklyAnalysis allData={allData} distractionHistory={distractionHistory} weekOffset={weekOffset} />
-                <ProductivityHeatmap allData={allData} distractionHistory={distractionHistory} selectedDate={selectedDate} mode="weekly" />
               </TabsContent>
 
               <TabsContent value="monthly" className="space-y-4 mt-4">
