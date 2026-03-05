@@ -5,13 +5,11 @@ import { useActivities } from '@/hooks/useActivities';
 import { useAppUsageMonitor } from '@/hooks/useAppUsageMonitor';
 import { usePersistentNotification } from '@/hooks/usePersistentNotification';
 import { ActivityInput } from '@/components/ActivityInput';
-import { ActivityTimeline } from '@/components/ActivityTimeline';
-import { TimeCharts } from '@/components/TimeCharts';
 import { DailyInsights } from '@/components/DailyInsights';
 import { GapDetectionDialog } from '@/components/GapDetectionDialog';
 import { ManualActivityInput } from '@/components/ManualActivityInput';
 import { DistractionPrompt } from '@/components/DistractionPrompt';
-import { AppSessionTimer } from '@/components/AppSessionTimer';
+
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 
@@ -341,22 +339,6 @@ const Index = () => {
             <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} />
 
             <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-              <Card className="lg:row-span-2">
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Activity Timeline
-                    {activities.length > 0 && (
-                      <span className="ml-2 text-sm font-normal text-muted-foreground">({activities.length})</span>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ActivityTimeline activities={activities} onDelete={deleteActivity} onUpdate={updateActivity} distractionHistory={distractionHistory} />
-                </CardContent>
-              </Card>
-
-              <TimeCharts activities={activities} />
-              <AppSessionTimer selectedDate={selectedDate} isToday={isViewingToday} />
               <SessionIntegrity activities={activities} distractionHistory={distractionHistory} />
               <DailyInsights activities={activities} date={selectedDate} />
             </div>
