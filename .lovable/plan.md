@@ -1,37 +1,46 @@
 
 
-# Fix: Keep App Usage Out of Timeline, Clarify Data Flow
+# Simplify the "Where Did My Time Go?" Experience
 
-## Problem
-1. App usage entries (often seconds-long) flood the timeline, making it unreadable
-2. User confused about why only certain apps appear (answer: only logged/imported apps show up)
+## The Core Insight
+You don't need a detailed app usage timeline. At 10pm, you want one glance that answers: "where did my day go?" That means your activities + total screentime per app, not individual app sessions.
 
-## Changes
+## Current Problem — Too Much Redundancy on Today Tab
+Right now the Today tab shows:
+1. **UnifiedDayView** — coverage bar, donut chart, app summary card, activity timeline
+2. **Activity Timeline** card (separate, duplicate of what's in UnifiedDayView)
+3. **TimeCharts** (another donut/bar chart of just activities)
+4. **AppSessionTimer** 
+5. **SessionIntegrity**
+6. **DailyInsights**
 
-### 1. Remove app logs from the timeline in UnifiedDayView.tsx
-- Keep the **donut chart** showing both activities + app usage (this is useful for the "where did my day go" view)
-- Keep the **collapsed app usage summary** card (grouped by app, expandable sessions)
-- **Remove** app entries from the vertical timeline — only show manual activity logs + gap detection there
-- This means deleting the block (lines ~120-131) that pushes app logs into `allEntries`
+That's 6 cards/sections, with the activity timeline shown twice and two separate donut charts.
 
-### 2. Keep donut chart inclusive
-- The donut still shows both activity categories AND app usage totals — giving the full 24h picture
-- Timeline stays clean with just your activities and untracked gaps
+## Plan
 
-### 3. No app filtering changes needed
-- All apps from `app_usage_logs` already show up. The "missing" apps simply haven't been imported yet
-- No code change needed here, just clarification
+### 1. Remove duplicate components from Today tab
+- **Remove** the standalone `ActivityTimeline` card — it's already in UnifiedDayView's timeline
+- **Remove** `TimeCharts` — the UnifiedDayView donut already covers this better (includes apps)
+- Keep `DailyInsights` and `SessionIntegrity` as they add unique value
 
-## Technical Details
+### 2. Simplify the App Summary in UnifiedDayView  
+- Remove the collapsible session details (individual session times) — just show app name + total screentime
+- Simpler, scannable list: `Instagram — 1h 12m`, `YouTube — 45m`, etc.
+- Sort by duration descending — biggest time sinks at top
 
-### File: `src/components/UnifiedDayView.tsx`
-- Remove the section (~lines 120-131) that adds individual app log entries to `allEntries` for the timeline
-- Keep the app grouping logic (`groups` Map) for the collapsed summary card and donut chart
-- Gap detection will now only apply between manual activities, which makes more sense
+### 3. Keep what works
+- **Coverage bar** — quick "X% of day accounted for"
+- **Donut chart** — full picture of activities + app screentime + untracked
+- **Activity timeline** — your logged activities with gap detection
+- **App screentime list** — simple totals, no session breakdown
 
-### Result
-- **Timeline**: Clean, only your logged activities + gaps between them
-- **Donut**: Full picture including app usage totals
-- **App Summary card**: Collapsed app groups with expandable sessions
-- All three work together without the timeline being overwhelmed
+## Files to Modify
+
+### `src/pages/Index.tsx`
+- Remove the standalone `ActivityTimeline` card and `TimeCharts` from the Today tab grid
+- Clean up the layout to just: input → UnifiedDayView → small utility cards
+
+### `src/components/UnifiedDayView.tsx`
+- Replace the collapsible app groups with a flat screentime list (app name + total time, no expand)
+- Remove `Collapsible` imports and expanded state management
 
