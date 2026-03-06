@@ -84,12 +84,13 @@ serve(async (req) => {
             content: `Extract EVERY visible app usage row from screenshots of app-usage trackers.
 
 Rules:
-- Capture all real apps you can read, including long sessions (30m+)
+- Capture ALL apps you can read, even those with very short durations (1 min, 2 min, etc.)
+- Do NOT skip apps just because their duration is short — include everything ≥1 minute
 - Do not collapse duplicates: if an app appears on multiple rows, return multiple entries
 - Time can be null if not visible in the screenshot
-- durationText must be the exact text shown (examples: "30 min", "01 mins 13 sec", "1h 12m", "00:42")
+- durationText must be the exact text shown (examples: "30 min", "01 mins 13 sec", "1h 12m", "00:42", "2 min")
 - durationSeconds should be the converted value when possible
-- Skip only rows that are explicitly zero duration ("0 sec", "00 sec")
+- Only skip rows that are explicitly zero duration ("0 sec", "00 sec", "0 min")
 - Skip system/OS entries like "Screen locked", "Screen on", "Screen off", "Device idle", "Phone locked", "Screen timeout", any launcher/home screen entries, keyboard apps, or system UI elements — these are NOT app usage
 - If uncertain about an app name, still include best readable text rather than dropping the row`,
           },
