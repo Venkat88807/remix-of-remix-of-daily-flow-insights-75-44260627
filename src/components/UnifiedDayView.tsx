@@ -267,6 +267,47 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         )}
       </div>
 
+      {/* Category Breakdown */}
+      {activities.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" /> Day Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {(() => {
+                const catTotals = new Map<string, { label: string; minutes: number; color: string }>();
+                activities.forEach(a => {
+                  const dur = a.duration || (a.isOngoing ? (Date.now() - new Date(a.startTime).getTime()) / 60000 : 0);
+                  if (dur <= 0) return;
+                  const existing = catTotals.get(a.category);
+                  if (existing) existing.minutes += dur;
+                  else catTotals.set(a.category, {
+                    label: CATEGORY_LABELS[a.category] || a.category,
+                    minutes: dur,
+                    color: CATEGORY_COLORS[a.category] || 'hsl(0 0% 60%)',
+                  });
+                });
+                const sorted = Array.from(catTotals.values()).sort((a, b) => b.minutes - a.minutes);
+                const maxMin = sorted[0]?.minutes || 1;
+                return sorted.map(cat => (
+                  <div key={cat.label} className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="text-sm font-medium flex-1">{cat.label}</span>
+                    <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${(cat.minutes / maxMin) * 100}%`, backgroundColor: cat.color }} />
+                    </div>
+                    <span className="text-sm font-bold tabular-nums w-16 text-right">{fmtDur(cat.minutes)}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Visual Timeline */}
       <Card>
         <CardHeader className="pb-2">
