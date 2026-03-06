@@ -226,7 +226,7 @@ export const AppUsagePage: React.FC = () => {
                   const files = e.target.files;
                   if (files?.length) {
                     setImportDate(selectedDate);
-                    handleScreenshotParse(files[0]);
+                    handleMultipleScreenshots(Array.from(files));
                   }
                   e.target.value = '';
                 }}

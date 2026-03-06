@@ -66,31 +66,46 @@ export const useActivities = (selectedDate?: string) => {
     
     const result: Activity[] = [];
     
-    // Add spillover from previous day (activities ending after midnight)
+    // Add spillover from previous day (activities ending after midnight, or still ongoing)
     prevDayActivities.forEach(a => {
-      if (!a.endTime) return;
-      const end = new Date(a.endTime);
       const start = new Date(a.startTime);
-      if (end > dayStart && start < dayStart) {
-        const clippedEnd = end > dayEnd ? dayEnd : end;
+      if (start >= dayStart) return; // belongs to this day already
+      
+      if (a.isOngoing) {
+        // Ongoing from previous day — show portion from midnight to now (or end of day)
+        const now = new Date();
+        const clippedEnd = activeDate < today ? dayEnd : (now < dayEnd ? now : dayEnd);
         result.push({
           ...a,
           id: `${a.id}-spill`,
           startTime: dayStart.toISOString(),
           endTime: clippedEnd.toISOString(),
           duration: Math.round((clippedEnd.getTime() - dayStart.getTime()) / 60000),
-          isOngoing: false,
+          isOngoing: activeDate >= today,
         });
+      } else if (a.endTime) {
+        const end = new Date(a.endTime);
+        if (end > dayStart) {
+          const clippedEnd = end > dayEnd ? dayEnd : end;
+          result.push({
+            ...a,
+            id: `${a.id}-spill`,
+            startTime: dayStart.toISOString(),
+            endTime: clippedEnd.toISOString(),
+            duration: Math.round((clippedEnd.getTime() - dayStart.getTime()) / 60000),
+            isOngoing: false,
+          });
+        }
       }
     });
     
-    // Add this day's activities, clipping any that extend past midnight
+    // Add this day's activities, clipping display at midnight but NOT stopping ongoing
     dayActivities.forEach(a => {
       const start = new Date(a.startTime);
       if (a.endTime) {
         const end = new Date(a.endTime);
         if (end > dayEnd) {
-          // Clip to end of day
+          // Clip display to end of day — the activity continues into next day
           result.push({
             ...a,
             endTime: dayEnd.toISOString(),
@@ -101,17 +116,8 @@ export const useActivities = (selectedDate?: string) => {
           result.push(a);
         }
       } else if (a.isOngoing) {
-        // Ongoing: if viewing a past day, clip to midnight; if today, keep as-is
-        if (activeDate < today) {
-          result.push({
-            ...a,
-            endTime: dayEnd.toISOString(),
-            duration: Math.round((dayEnd.getTime() - start.getTime()) / 60000),
-            isOngoing: false,
-          });
-        } else {
-          result.push(a);
-        }
+        // Keep ongoing as-is — do NOT auto-stop at midnight
+        result.push(a);
       } else {
         result.push(a);
       }
