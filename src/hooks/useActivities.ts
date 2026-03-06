@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Activity, DayData } from '@/types/activity';
 import { format } from 'date-fns';
 
@@ -51,9 +51,74 @@ export const useActivities = (selectedDate?: string) => {
     console.log('Saved to localStorage:', allData.length, 'days');
   }, [allData]);
 
-  // Get activities for the selected date
-  const todayData = allData.find(d => d.date === activeDate);
-  const activities = todayData?.activities || [];
+  // Get activities for the selected date, including cross-midnight splits
+  const activities = useMemo(() => {
+    const dayActivities = allData.find(d => d.date === activeDate)?.activities || [];
+    
+    // Also check previous day for activities that span into this day
+    const [y, m, d] = activeDate.split('-').map(Number);
+    const prevDate = new Date(y, m - 1, d - 1);
+    const prevDateStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+    const prevDayActivities = allData.find(dd => dd.date === prevDateStr)?.activities || [];
+    
+    const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const dayEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0);
+    
+    const result: Activity[] = [];
+    
+    // Add spillover from previous day (activities ending after midnight)
+    prevDayActivities.forEach(a => {
+      if (!a.endTime) return;
+      const end = new Date(a.endTime);
+      const start = new Date(a.startTime);
+      if (end > dayStart && start < dayStart) {
+        const clippedEnd = end > dayEnd ? dayEnd : end;
+        result.push({
+          ...a,
+          id: `${a.id}-spill`,
+          startTime: dayStart.toISOString(),
+          endTime: clippedEnd.toISOString(),
+          duration: Math.round((clippedEnd.getTime() - dayStart.getTime()) / 60000),
+          isOngoing: false,
+        });
+      }
+    });
+    
+    // Add this day's activities, clipping any that extend past midnight
+    dayActivities.forEach(a => {
+      const start = new Date(a.startTime);
+      if (a.endTime) {
+        const end = new Date(a.endTime);
+        if (end > dayEnd) {
+          // Clip to end of day
+          result.push({
+            ...a,
+            endTime: dayEnd.toISOString(),
+            duration: Math.round((dayEnd.getTime() - start.getTime()) / 60000),
+            isOngoing: false,
+          });
+        } else {
+          result.push(a);
+        }
+      } else if (a.isOngoing) {
+        // Ongoing: if viewing a past day, clip to midnight; if today, keep as-is
+        if (activeDate < today) {
+          result.push({
+            ...a,
+            endTime: dayEnd.toISOString(),
+            duration: Math.round((dayEnd.getTime() - start.getTime()) / 60000),
+            isOngoing: false,
+          });
+        } else {
+          result.push(a);
+        }
+      } else {
+        result.push(a);
+      }
+    });
+    
+    return result;
+  }, [allData, activeDate, today]);
 
   // Get ongoing activity
   const ongoingActivity = activities.find(a => a.isOngoing);
