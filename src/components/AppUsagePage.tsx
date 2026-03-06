@@ -124,33 +124,50 @@ export const AppUsagePage: React.FC = () => {
     }
   };
 
-  const handleScreenshotParse = async (file: File) => {
+  const handleScreenshotParse = async (file: File): Promise<Array<{ appName: string; time?: string | null; durationSeconds: number }>> => {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const { data, error } = await supabase.functions.invoke('parse-app-usage-screenshot', {
+      body: { imageBase64: base64, date: importDate },
+    });
+
+    if (error) throw error;
+    return data?.entries || [];
+  };
+
+  const handleMultipleScreenshots = async (files: File[]) => {
     setImporting(true);
     setParsedEntries([]);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Process all screenshots in parallel
+      const results = await Promise.all(files.map(f => handleScreenshotParse(f)));
+      const allEntries = results.flat();
 
-      const { data, error } = await supabase.functions.invoke('parse-app-usage-screenshot', {
-        body: { imageBase64: base64, date: importDate },
-      });
-
-      if (error) throw error;
-      if (!data?.entries?.length) {
-        toast.info('No usable entries found in screenshot (0-sec entries are filtered)');
+      if (!allEntries.length) {
+        toast.info('No usable entries found in screenshots');
         setImporting(false);
         return;
       }
 
-      setParsedEntries(data.entries.map((e: any) => ({ ...e, selected: true })));
+      // Deduplicate across screenshots
+      const seen = new Set<string>();
+      const deduped = allEntries.filter(e => {
+        const key = `${e.appName.toLowerCase()}|${e.durationSeconds}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      setParsedEntries(deduped.map((e: any) => ({ ...e, selected: true })));
       setShowImport(true);
     } catch (err) {
       console.error('Screenshot parse error:', err);
-      toast.error('Failed to parse screenshot');
+      toast.error('Failed to parse screenshots');
     }
     setImporting(false);
   };
@@ -226,7 +243,7 @@ export const AppUsagePage: React.FC = () => {
                   const files = e.target.files;
                   if (files?.length) {
                     setImportDate(selectedDate);
-                    handleScreenshotParse(files[0]);
+                    handleMultipleScreenshots(Array.from(files));
                   }
                   e.target.value = '';
                 }}
