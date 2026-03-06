@@ -267,8 +267,8 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         )}
       </div>
 
-      {/* Category Breakdown */}
-      {activities.length > 0 && (
+      {/* Full Day Breakdown — activities + apps + untracked */}
+      {(activities.length > 0 || appGroups.length > 0) && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -278,28 +278,51 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
           <CardContent>
             <div className="space-y-2">
               {(() => {
-                const catTotals = new Map<string, { label: string; minutes: number; color: string }>();
+                const allTotals = new Map<string, { label: string; minutes: number; color: string }>();
+
+                // Manual activities by category
                 activities.forEach(a => {
                   const dur = a.duration || (a.isOngoing ? (Date.now() - new Date(a.startTime).getTime()) / 60000 : 0);
                   if (dur <= 0) return;
-                  const existing = catTotals.get(a.category);
+                  const existing = allTotals.get(`cat-${a.category}`);
                   if (existing) existing.minutes += dur;
-                  else catTotals.set(a.category, {
+                  else allTotals.set(`cat-${a.category}`, {
                     label: CATEGORY_LABELS[a.category] || a.category,
                     minutes: dur,
                     color: CATEGORY_COLORS[a.category] || 'hsl(0 0% 60%)',
                   });
                 });
-                const sorted = Array.from(catTotals.values()).sort((a, b) => b.minutes - a.minutes);
+
+                // App screen time
+                appGroups.forEach(g => {
+                  allTotals.set(`app-${g.appName}`, {
+                    label: g.appName,
+                    minutes: g.totalSeconds / 60,
+                    color: g.color,
+                  });
+                });
+
+                // Untracked
+                const trackedMin = Array.from(allTotals.values()).reduce((s, t) => s + t.minutes, 0);
+                const untrackedMin = 24 * 60 - trackedMin;
+                if (untrackedMin > 5) {
+                  allTotals.set('untracked', {
+                    label: 'Untracked',
+                    minutes: untrackedMin,
+                    color: 'hsl(var(--muted-foreground))',
+                  });
+                }
+
+                const sorted = Array.from(allTotals.values()).sort((a, b) => b.minutes - a.minutes);
                 const maxMin = sorted[0]?.minutes || 1;
-                return sorted.map(cat => (
-                  <div key={cat.label} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                    <span className="text-sm font-medium flex-1">{cat.label}</span>
+                return sorted.map(item => (
+                  <div key={item.label} className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-sm font-medium flex-1 truncate">{item.label}</span>
                     <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${(cat.minutes / maxMin) * 100}%`, backgroundColor: cat.color }} />
+                      <div className="h-full rounded-full" style={{ width: `${(item.minutes / maxMin) * 100}%`, backgroundColor: item.color }} />
                     </div>
-                    <span className="text-sm font-bold tabular-nums w-16 text-right">{fmtDur(cat.minutes)}</span>
+                    <span className="text-sm font-bold tabular-nums w-16 text-right">{fmtDur(item.minutes)}</span>
                   </div>
                 ));
               })()}
