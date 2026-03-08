@@ -16,7 +16,7 @@ import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
-import { SessionIntegrity } from '@/components/SessionIntegrity';
+
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { AppUsagePage } from '@/components/AppUsagePage';
 import { UnifiedDayView } from '@/components/UnifiedDayView';
