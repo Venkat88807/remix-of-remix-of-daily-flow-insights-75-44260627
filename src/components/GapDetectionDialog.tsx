@@ -12,14 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ActivityCategory, CATEGORY_LABELS } from '@/types/activity';
+import { CategorySelect } from './CategorySelect';
+import { ActivityCategory } from '@/types/activity';
 
 interface GapInfo {
   startTime: string; // ISO string
@@ -117,18 +111,7 @@ export const GapDetectionDialog: React.FC<GapDetectionDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="gap-category">Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as ActivityCategory)}>
-              <SelectTrigger id="gap-category">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategorySelect value={category} onValueChange={setCategory} id="gap-category" />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">

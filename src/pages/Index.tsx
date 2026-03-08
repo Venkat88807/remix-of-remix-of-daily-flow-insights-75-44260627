@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { ParsedActivity, ActivityCategory, Activity } from '@/types/activity';
+import { ParsedActivity, ActivityCategory, Activity, getCustomCategories } from '@/types/activity';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
@@ -90,7 +90,7 @@ const Index = () => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       const { data, error } = await supabase.functions.invoke('parse-activity', {
-        body: { message: text, hasOngoingActivity: !!ongoingActivity, categoryCorrections: getCategoryCorrections().slice(-20) },
+        body: { message: text, hasOngoingActivity: !!ongoingActivity, categoryCorrections: getCategoryCorrections().slice(-20), customCategories: getCustomCategories() },
       });
       if (!error && data && !data.error) {
         handleActivityParsed(data);

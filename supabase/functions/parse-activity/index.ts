@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const CATEGORIES = [
+const BASE_CATEGORIES = [
   'work', 'coding', 'meetings', 'meals', 'exercise', 
   'sleep', 'leisure', 'social', 'commute', 'personal_care', 'break', 'other'
 ];
@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, hasOngoingActivity, categoryCorrections } = await req.json();
+    const { message, hasOngoingActivity, categoryCorrections, customCategories } = await req.json();
     
     // Input validation
     const MAX_MESSAGE_LENGTH = 500;
@@ -56,6 +56,13 @@ serve(async (req) => {
       correctionContext = `\n\nIMPORTANT - The user has corrected these categorizations in the past. Learn from them and apply similar logic:\n${examples}\n`;
     }
 
+    // Build dynamic categories list including user's custom ones
+    const customCats = Array.isArray(customCategories) ? customCategories : [];
+    const ALL_CATEGORIES = [...BASE_CATEGORIES, ...customCats.map((c: { key: string }) => c.key)];
+    const customCatDesc = customCats.length > 0
+      ? '\n' + customCats.map((c: { key: string; label: string }) => `    - ${c.key}: ${c.label} (user-defined category)`).join('\n')
+      : '';
+
     const systemPrompt = `You are a time tracking assistant. Your job is to parse natural language activity descriptions and extract structured data.
 
 Current time in IST: ${currentTimeIST} on ${currentDateIST}
@@ -81,7 +88,7 @@ Given a user's message about what they're doing, determine:
    - commute: Travel, driving, transportation
    - personal_care: Shower, getting ready, self-care
    - break: Short breaks, rest
-   - other: Anything that doesn't fit above
+   - other: Anything that doesn't fit above${customCatDesc}
 
 4. **startTime** (optional): If the user mentions a specific time (e.g., "at 2pm", "since 10:30", "from 9am"), convert it to ISO 8601 format in IST timezone. If no time is mentioned, set to null.
 
@@ -129,7 +136,7 @@ Respond ONLY with valid JSON, no other text.`;
                   },
                   category: { 
                     type: "string", 
-                    enum: CATEGORIES,
+                    enum: ALL_CATEGORIES,
                     description: "The category of the activity"
                   },
                   startTime: {
@@ -181,7 +188,7 @@ Respond ONLY with valid JSON, no other text.`;
       throw new Error("Incomplete parsed data");
     }
 
-    if (!CATEGORIES.includes(parsed.category)) {
+    if (!ALL_CATEGORIES.includes(parsed.category)) {
       parsed.category = "other";
     }
 

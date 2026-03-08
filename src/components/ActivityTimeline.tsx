@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Activity, CATEGORY_COLORS, CATEGORY_LABELS } from '@/types/activity';
+import { Activity, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -140,13 +140,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
               activity.isOngoing && "ring-2 ring-primary ring-offset-2 ring-offset-background"
             )}
             style={{
-              backgroundColor: `${CATEGORY_COLORS[activity.category]}10`,
-              borderColor: CATEGORY_COLORS[activity.category],
+              backgroundColor: `${getCategoryColor(activity.category)}10`,
+              borderColor: getCategoryColor(activity.category),
             }}
           >
             <div
               className="w-3 h-full min-h-[3rem] rounded-full shrink-0"
-              style={{ backgroundColor: CATEGORY_COLORS[activity.category] }}
+              style={{ backgroundColor: getCategoryColor(activity.category) }}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
@@ -162,11 +162,11 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 <span
                   className="px-2 py-0.5 rounded text-xs font-medium"
                   style={{
-                    backgroundColor: CATEGORY_COLORS[activity.category],
+                    backgroundColor: getCategoryColor(activity.category),
                     color: 'white',
                   }}
                 >
-                  {CATEGORY_LABELS[activity.category]}
+                  {getCategoryLabel(activity.category)}
                 </span>
                 <span>
                   {formatTime(activity.startTime)}

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Clock, Layers } from 'lucide-react';
-import { Activity, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/types/activity';
+import { Activity, ActivityCategory, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { AppUsageLog } from '@/hooks/useAppUsage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -81,7 +81,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         startTime: start,
         endTime: end,
         durationMinutes: Math.max(dur, 0),
-        color: CATEGORY_COLORS[a.category] || 'hsl(0 0% 60%)',
+        color: getCategoryColor(a.category),
         isOngoing: a.isOngoing,
       });
     });
@@ -144,9 +144,9 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
       const existing = categoryTotals.get(key);
       if (existing) existing.value += dur;
       else categoryTotals.set(key, {
-        name: CATEGORY_LABELS[a.category] || a.category,
+        name: getCategoryLabel(a.category),
         value: dur,
-        color: CATEGORY_COLORS[a.category],
+        color: getCategoryColor(a.category),
       });
     });
 
@@ -290,9 +290,9 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
                   const existing = allTotals.get(`cat-${a.category}`);
                   if (existing) existing.minutes += dur;
                   else allTotals.set(`cat-${a.category}`, {
-                    label: CATEGORY_LABELS[a.category] || a.category,
+                    label: getCategoryLabel(a.category),
                     minutes: dur,
-                    color: CATEGORY_COLORS[a.category] || 'hsl(0 0% 60%)',
+                    color: getCategoryColor(a.category),
                   });
                 });
 

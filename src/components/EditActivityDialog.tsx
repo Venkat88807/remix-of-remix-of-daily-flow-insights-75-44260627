@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Activity, ActivityCategory, CATEGORY_LABELS } from '@/types/activity';
+import { Activity, ActivityCategory } from '@/types/activity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CategorySelect } from './CategorySelect';
 import {
   Dialog,
   DialogContent,
@@ -12,13 +13,6 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface EditActivityDialogProps {
   activity: Activity | null;
@@ -97,18 +91,7 @@ export const EditActivityDialog: React.FC<EditActivityDialogProps> = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as ActivityCategory)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategorySelect value={category} onValueChange={setCategory} id="category" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

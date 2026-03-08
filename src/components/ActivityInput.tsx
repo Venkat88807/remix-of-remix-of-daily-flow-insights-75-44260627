@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ParsedActivity, Activity } from '@/types/activity';
+import { ParsedActivity, Activity, getCustomCategories } from '@/types/activity';
 import { getCategoryCorrections } from '@/hooks/useActivities';
 
 const MAX_INPUT_LENGTH = 500;
@@ -47,6 +47,7 @@ export const ActivityInput: React.FC<ActivityInputProps> = ({
           message: input.trim(),
           hasOngoingActivity,
           categoryCorrections: corrections.slice(-20),
+          customCategories: getCustomCategories(),
         },
       });
 
