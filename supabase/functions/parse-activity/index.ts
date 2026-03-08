@@ -188,7 +188,7 @@ Respond ONLY with valid JSON, no other text.`;
       throw new Error("Incomplete parsed data");
     }
 
-    if (!CATEGORIES.includes(parsed.category)) {
+    if (!ALL_CATEGORIES.includes(parsed.category)) {
       parsed.category = "other";
     }
 
