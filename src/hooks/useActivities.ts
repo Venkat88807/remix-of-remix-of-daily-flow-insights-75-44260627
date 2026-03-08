@@ -212,6 +212,10 @@ export const useActivities = (selectedDate?: string) => {
                 updatedActivity.endTime
               );
             }
+            // Track category corrections for AI learning
+            if (updates.category && updates.category !== a.category) {
+              saveCategoryCorrection(a.description, a.category, updates.category);
+            }
             console.log('Activity updated:', a.category, '->', updatedActivity.category);
             return updatedActivity;
           }
