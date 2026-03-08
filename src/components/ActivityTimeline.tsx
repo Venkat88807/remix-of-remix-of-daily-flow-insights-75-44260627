@@ -140,13 +140,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
               activity.isOngoing && "ring-2 ring-primary ring-offset-2 ring-offset-background"
             )}
             style={{
-              backgroundColor: `${CATEGORY_COLORS[activity.category]}10`,
-              borderColor: CATEGORY_COLORS[activity.category],
+              backgroundColor: `${getCategoryColor(activity.category)}10`,
+              borderColor: getCategoryColor(activity.category),
             }}
           >
             <div
               className="w-3 h-full min-h-[3rem] rounded-full shrink-0"
-              style={{ backgroundColor: CATEGORY_COLORS[activity.category] }}
+              style={{ backgroundColor: getCategoryColor(activity.category) }}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
