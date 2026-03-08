@@ -216,22 +216,24 @@ export const useActivities = (selectedDate?: string) => {
 
   // Delete an activity
   const deleteActivity = useCallback((activityId: string) => {
+    const realId = activityId.replace(/-spill$/, '');
     setAllData(prev => {
       return prev.map(day => ({
         ...day,
-        activities: day.activities.filter(a => a.id !== activityId),
+        activities: day.activities.filter(a => a.id !== realId),
       }));
     });
   }, []);
 
   // Update an activity
   const updateActivity = useCallback((activityId: string, updates: Partial<Activity>) => {
-    console.log('updateActivity called:', activityId, 'updates:', JSON.stringify(updates));
+    const realId = activityId.replace(/-spill$/, '');
+    console.log('updateActivity called:', realId, 'updates:', JSON.stringify(updates));
     setAllData(prev => {
       const newData = prev.map(day => ({
         ...day,
         activities: day.activities.map(a => {
-          if (a.id === activityId) {
+          if (a.id === realId) {
             const updatedActivity = { ...a, ...updates };
             if (updatedActivity.startTime && updatedActivity.endTime) {
               updatedActivity.duration = calculateDuration(
