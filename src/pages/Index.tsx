@@ -338,8 +338,7 @@ const Index = () => {
             {/* Unified Day View */}
             <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} />
 
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-              <SessionIntegrity activities={activities} distractionHistory={distractionHistory} />
+            <div className="grid gap-4 sm:gap-6 grid-cols-1">
               <DailyInsights activities={activities} date={selectedDate} />
             </div>
           </TabsContent>

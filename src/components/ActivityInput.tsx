@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ParsedActivity, Activity } from '@/types/activity';
+import { getCategoryCorrections } from '@/hooks/useActivities';
 
 const MAX_INPUT_LENGTH = 500;
 
@@ -38,10 +39,14 @@ export const ActivityInput: React.FC<ActivityInputProps> = ({
     isSubmittingRef.current = true;
     setIsLoading(true);
     try {
+      // Get recent category corrections for AI learning
+      const corrections = getCategoryCorrections();
+      
       const { data, error } = await supabase.functions.invoke('parse-activity', {
         body: { 
           message: input.trim(),
-          hasOngoingActivity 
+          hasOngoingActivity,
+          categoryCorrections: corrections.slice(-20),
         },
       });
 
