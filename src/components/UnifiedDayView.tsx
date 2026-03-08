@@ -57,7 +57,7 @@ function getAppColor(appName: string, index: number): string {
   return APP_COLORS[index % APP_COLORS.length];
 }
 
-export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate }) => {
+export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate, onDeleteActivity, onUpdateActivity }) => {
 
   // Build unified entries
   const { entries, appGroups, donutData, totalTrackedMinutes } = useMemo(() => {
