@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Clock, Layers } from 'lucide-react';
-import { Activity, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/types/activity';
+import { Activity, ActivityCategory, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { AppUsageLog } from '@/hooks/useAppUsage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
