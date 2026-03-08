@@ -144,9 +144,9 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
       const existing = categoryTotals.get(key);
       if (existing) existing.value += dur;
       else categoryTotals.set(key, {
-        name: CATEGORY_LABELS[a.category] || a.category,
+        name: getCategoryLabel(a.category),
         value: dur,
-        color: CATEGORY_COLORS[a.category],
+        color: getCategoryColor(a.category),
       });
     });
 
