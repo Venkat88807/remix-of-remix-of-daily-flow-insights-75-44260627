@@ -56,6 +56,13 @@ serve(async (req) => {
       correctionContext = `\n\nIMPORTANT - The user has corrected these categorizations in the past. Learn from them and apply similar logic:\n${examples}\n`;
     }
 
+    // Build dynamic categories list including user's custom ones
+    const customCats = Array.isArray(customCategories) ? customCategories : [];
+    const ALL_CATEGORIES = [...BASE_CATEGORIES, ...customCats.map((c: { key: string }) => c.key)];
+    const customCatDesc = customCats.length > 0
+      ? '\n' + customCats.map((c: { key: string; label: string }) => `    - ${c.key}: ${c.label} (user-defined category)`).join('\n')
+      : '';
+
     const systemPrompt = `You are a time tracking assistant. Your job is to parse natural language activity descriptions and extract structured data.
 
 Current time in IST: ${currentTimeIST} on ${currentDateIST}
