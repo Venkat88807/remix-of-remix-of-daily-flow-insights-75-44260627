@@ -136,7 +136,7 @@ Respond ONLY with valid JSON, no other text.`;
                   },
                   category: { 
                     type: "string", 
-                    enum: CATEGORIES,
+                    enum: ALL_CATEGORIES,
                     description: "The category of the activity"
                   },
                   startTime: {
