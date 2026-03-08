@@ -37,6 +37,8 @@ interface UnifiedDayViewProps {
   activities: Activity[];
   appLogs: AppUsageLog[];
   selectedDate: string;
+  onDeleteActivity: (id: string) => void;
+  onUpdateActivity: (id: string, updates: Partial<Activity>) => void;
 }
 
 function fmtTime(date: Date): string {
