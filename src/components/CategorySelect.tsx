@@ -64,7 +64,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({ value, onValueCh
       <SelectTrigger id={id}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent side="bottom" className="max-h-[200px]">
+      <SelectContent side="bottom" avoidCollisions={false} className="max-h-[200px]">
         {entries.map(([key, label]) => (
           <SelectItem key={key} value={key}>{label}</SelectItem>
         ))}
