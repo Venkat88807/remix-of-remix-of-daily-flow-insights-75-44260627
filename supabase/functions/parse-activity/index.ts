@@ -88,7 +88,7 @@ Given a user's message about what they're doing, determine:
    - commute: Travel, driving, transportation
    - personal_care: Shower, getting ready, self-care
    - break: Short breaks, rest
-   - other: Anything that doesn't fit above
+   - other: Anything that doesn't fit above${customCatDesc}
 
 4. **startTime** (optional): If the user mentions a specific time (e.g., "at 2pm", "since 10:30", "from 9am"), convert it to ISO 8601 format in IST timezone. If no time is mentioned, set to null.
 
