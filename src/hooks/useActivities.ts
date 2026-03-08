@@ -107,27 +107,27 @@ export const useActivities = (selectedDate?: string) => {
   const ongoingActivity = activities.find(a => a.isOngoing);
 
   // Add a new activity
-  // Add a new activity
   const addActivity = useCallback((activity: Omit<Activity, 'id'> & { isOngoing?: boolean }) => {
     const currentTime = getISTTime();
-    const currentDate = getISTDate();
+    const startTime = activity.startTime || currentTime;
+    const targetDate = getDateKeyFromISO(startTime);
 
     setAllData(prev => {
       let updated = [...prev];
-      let dayIndex = updated.findIndex(d => d.date === currentDate);
-      
+      let dayIndex = updated.findIndex(d => d.date === targetDate);
+
       if (dayIndex === -1) {
-        updated.push({ date: currentDate, activities: [] });
+        updated.push({ date: targetDate, activities: [] });
         dayIndex = updated.length - 1;
       }
 
-      // If adding an ongoing activity, stop any existing ongoing activities
+      // If adding an ongoing activity, stop any existing ongoing activity across all days
       if (activity.isOngoing !== false) {
-        updated[dayIndex] = {
-          ...updated[dayIndex],
-          activities: updated[dayIndex].activities.map(a => {
+        updated = updated.map(day => ({
+          ...day,
+          activities: day.activities.map(a => {
             if (a.isOngoing) {
-              const endTime = activity.startTime || currentTime;
+              const endTime = startTime;
               return {
                 ...a,
                 isOngoing: false,
@@ -137,7 +137,7 @@ export const useActivities = (selectedDate?: string) => {
             }
             return a;
           }),
-        };
+        }));
       }
 
       // Add new activity
@@ -145,10 +145,10 @@ export const useActivities = (selectedDate?: string) => {
         id: generateId(),
         description: activity.description,
         category: activity.category,
-        startTime: activity.startTime || currentTime,
+        startTime,
         endTime: activity.endTime,
-        duration: activity.duration ?? (activity.endTime 
-          ? calculateDuration(activity.startTime || currentTime, activity.endTime)
+        duration: activity.duration ?? (activity.endTime
+          ? calculateDuration(startTime, activity.endTime)
           : undefined),
         isOngoing: activity.isOngoing ?? true,
       };
@@ -163,31 +163,25 @@ export const useActivities = (selectedDate?: string) => {
     });
   }, []);
 
-  // Stop ongoing activity
+  // Stop ongoing activity (even if it started on a previous day)
   const stopOngoingActivity = useCallback((endTime?: string) => {
     const stopTime = endTime || getISTTime();
-    const currentDate = getISTDate();
 
     setAllData(prev => {
-      return prev.map(day => {
-        if (day.date === currentDate) {
-          return {
-            ...day,
-            activities: day.activities.map(a => {
-              if (a.isOngoing) {
-                return {
-                  ...a,
-                  isOngoing: false,
-                  endTime: stopTime,
-                  duration: calculateDuration(a.startTime, stopTime),
-                };
-              }
-              return a;
-            }),
-          };
-        }
-        return day;
-      });
+      return prev.map(day => ({
+        ...day,
+        activities: day.activities.map(a => {
+          if (a.isOngoing) {
+            return {
+              ...a,
+              isOngoing: false,
+              endTime: stopTime,
+              duration: calculateDuration(a.startTime, stopTime),
+            };
+          }
+          return a;
+        }),
+      }));
     });
   }, []);
 
