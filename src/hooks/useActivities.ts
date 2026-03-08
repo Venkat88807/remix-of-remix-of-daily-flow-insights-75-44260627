@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Activity, DayData } from '@/types/activity';
-import { format } from 'date-fns';
 
 const STORAGE_KEY = 'time-tracker-data';
 
