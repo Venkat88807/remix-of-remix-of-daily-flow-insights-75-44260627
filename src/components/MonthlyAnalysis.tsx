@@ -102,8 +102,10 @@ export const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({
       };
     });
 
-    const integrity = current.totalLogged > 0
-      ? Math.round(((current.totalLogged - current.distraction) / current.totalLogged) * 100)
+    // Integrity = productive work / (productive work + distraction time)
+    const totalAccountedFor = current.work + current.distraction;
+    const integrity = totalAccountedFor > 0
+      ? Math.round((current.work / totalAccountedFor) * 100)
       : 100;
 
     return {
