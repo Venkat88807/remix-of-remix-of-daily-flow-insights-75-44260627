@@ -1,7 +1,40 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Activity, DayData } from '@/types/activity';
+import { Activity, ActivityCategory, DayData } from '@/types/activity';
 
 const STORAGE_KEY = 'time-tracker-data';
+const CORRECTIONS_KEY = 'time-tracker-category-corrections';
+
+interface CategoryCorrection {
+  description: string;
+  fromCategory: ActivityCategory;
+  toCategory: ActivityCategory;
+  timestamp: number;
+}
+
+const MAX_CORRECTIONS = 50;
+
+const saveCategoryCorrection = (description: string, from: ActivityCategory, to: ActivityCategory) => {
+  try {
+    const stored = localStorage.getItem(CORRECTIONS_KEY);
+    const corrections: CategoryCorrection[] = stored ? JSON.parse(stored) : [];
+    corrections.push({ description, fromCategory: from, toCategory: to, timestamp: Date.now() });
+    // Keep only the most recent corrections
+    const trimmed = corrections.slice(-MAX_CORRECTIONS);
+    localStorage.setItem(CORRECTIONS_KEY, JSON.stringify(trimmed));
+    console.log(`Category correction saved: "${description}" ${from} → ${to}`);
+  } catch (e) {
+    console.error('Failed to save category correction:', e);
+  }
+};
+
+export const getCategoryCorrections = (): CategoryCorrection[] => {
+  try {
+    const stored = localStorage.getItem(CORRECTIONS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
