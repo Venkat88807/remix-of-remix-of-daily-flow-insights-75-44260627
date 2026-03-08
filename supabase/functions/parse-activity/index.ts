@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const CATEGORIES = [
+const BASE_CATEGORIES = [
   'work', 'coding', 'meetings', 'meals', 'exercise', 
   'sleep', 'leisure', 'social', 'commute', 'personal_care', 'break', 'other'
 ];
