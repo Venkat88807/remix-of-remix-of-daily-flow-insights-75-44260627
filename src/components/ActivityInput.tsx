@@ -47,6 +47,7 @@ export const ActivityInput: React.FC<ActivityInputProps> = ({
           message: input.trim(),
           hasOngoingActivity,
           categoryCorrections: corrections.slice(-20),
+          customCategories: getCustomCategories(),
         },
       });
 
