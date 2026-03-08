@@ -13,14 +13,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ActivityCategory, CATEGORY_LABELS } from '@/types/activity';
+import { CategorySelect } from './CategorySelect';
+import { ActivityCategory } from '@/types/activity';
 
 interface ManualActivityInputProps {
   onAddActivity: (activity: {
