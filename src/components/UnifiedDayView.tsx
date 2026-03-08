@@ -5,6 +5,7 @@ import { Activity, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/
 import { AppUsageLog } from '@/hooks/useAppUsage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { ActivityTimeline } from './ActivityTimeline';
 import { cn } from '@/lib/utils';
 
 const APP_COLORS = [
