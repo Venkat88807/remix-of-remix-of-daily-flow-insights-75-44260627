@@ -290,9 +290,9 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
                   const existing = allTotals.get(`cat-${a.category}`);
                   if (existing) existing.minutes += dur;
                   else allTotals.set(`cat-${a.category}`, {
-                    label: CATEGORY_LABELS[a.category] || a.category,
+                    label: getCategoryLabel(a.category),
                     minutes: dur,
-                    color: CATEGORY_COLORS[a.category] || 'hsl(0 0% 60%)',
+                    color: getCategoryColor(a.category),
                   });
                 });
 
