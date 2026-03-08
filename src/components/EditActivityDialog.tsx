@@ -49,7 +49,7 @@ export const EditActivityDialog: React.FC<EditActivityDialogProps> = ({
       setDescription(activity.description);
       setCategory(activity.category);
       setStartTime(formatTimeForInput(activity.startTime));
-      setEndTime(activity.endTime ? formatTimeForInput(activity.endTime) : '');
+      setEndTime(activity.endTime && !activity.isOngoing ? formatTimeForInput(activity.endTime) : '');
     }
   }, [activity]);
 
