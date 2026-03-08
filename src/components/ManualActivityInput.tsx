@@ -109,18 +109,7 @@ export const ManualActivityInput: React.FC<ManualActivityInputProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="manual-category">Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as ActivityCategory)}>
-              <SelectTrigger id="manual-category">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategorySelect value={category} onValueChange={setCategory} id="manual-category" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

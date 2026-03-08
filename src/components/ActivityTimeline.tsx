@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Activity, CATEGORY_COLORS, CATEGORY_LABELS } from '@/types/activity';
+import { Activity, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
