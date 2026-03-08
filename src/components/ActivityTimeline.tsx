@@ -170,7 +170,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 </span>
                 <span>
                   {formatTime(activity.startTime)}
-                  {activity.endTime && ` — ${formatTime(activity.endTime)}`}
+                  {activity.isOngoing ? ' — Now' : activity.endTime ? ` — ${formatTime(activity.endTime)}` : ''}
                 </span>
                 {activity.duration && (
                   <span className="font-medium">{formatDuration(activity.duration)}</span>
