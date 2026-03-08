@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Moon, Sun, Download, Upload, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, BellOff, MoreVertical } from 'lucide-react';
+import { getCategoryCorrections } from '@/hooks/useActivities';
 import { format, addDays, subDays } from 'date-fns';
 import { useActivities } from '@/hooks/useActivities';
 import { useAppUsageMonitor } from '@/hooks/useAppUsageMonitor';
