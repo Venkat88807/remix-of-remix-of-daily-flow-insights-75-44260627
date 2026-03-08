@@ -336,7 +336,7 @@ const Index = () => {
             <DistractionPrompt distraction={pendingDistraction} onRespond={handleDistractionRespond} />
 
             {/* Unified Day View */}
-            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} />
+            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} />
 
             <div className="grid gap-4 sm:gap-6 grid-cols-1">
               <DailyInsights activities={activities} date={selectedDate} />
