@@ -81,7 +81,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         startTime: start,
         endTime: end,
         durationMinutes: Math.max(dur, 0),
-        color: CATEGORY_COLORS[a.category] || 'hsl(0 0% 60%)',
+        color: getCategoryColor(a.category),
         isOngoing: a.isOngoing,
       });
     });
