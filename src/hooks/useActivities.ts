@@ -24,6 +24,11 @@ const calculateDuration = (start: string, end: string): number => {
   return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 };
 
+const getDateKeyFromISO = (isoString: string): string => {
+  const dt = new Date(isoString);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+};
+
 // Load initial data from localStorage
 const loadStoredData = (): DayData[] => {
   try {
@@ -50,78 +55,51 @@ export const useActivities = (selectedDate?: string) => {
     console.log('Saved to localStorage:', allData.length, 'days');
   }, [allData]);
 
-  // Get activities for the selected date, including cross-midnight splits
+  // Get activities for selected date, including any segment that overlaps this day
   const activities = useMemo(() => {
-    const dayActivities = allData.find(d => d.date === activeDate)?.activities || [];
-    
-    // Also check previous day for activities that span into this day
     const [y, m, d] = activeDate.split('-').map(Number);
-    const prevDate = new Date(y, m - 1, d - 1);
-    const prevDateStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
-    const prevDayActivities = allData.find(dd => dd.date === prevDateStr)?.activities || [];
-    
     const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
     const dayEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0);
-    
+    const now = new Date();
+
     const result: Activity[] = [];
-    
-    // Add spillover from previous day (activities ending after midnight, or still ongoing)
-    prevDayActivities.forEach(a => {
-      const start = new Date(a.startTime);
-      if (start >= dayStart) return; // belongs to this day already
-      
-      if (a.isOngoing) {
-        // Ongoing from previous day — show portion from midnight to now (or end of day)
-        const now = new Date();
-        const clippedEnd = activeDate < today ? dayEnd : (now < dayEnd ? now : dayEnd);
+
+    allData.forEach((day) => {
+      day.activities.forEach((activity) => {
+        if (!activity.startTime) return;
+
+        const activityStart = new Date(activity.startTime);
+        if (Number.isNaN(activityStart.getTime())) return;
+
+        const rawEnd = activity.endTime ? new Date(activity.endTime) : now;
+        if (Number.isNaN(rawEnd.getTime())) return;
+
+        const activityEnd = rawEnd.getTime() < activityStart.getTime() ? activityStart : rawEnd;
+
+        const overlapsSelectedDay = activityStart < dayEnd && activityEnd > dayStart;
+        if (!overlapsSelectedDay) return;
+
+        const segmentStart = activityStart > dayStart ? activityStart : dayStart;
+        const segmentEnd = activityEnd < dayEnd ? activityEnd : dayEnd;
+
+        if (segmentEnd.getTime() <= segmentStart.getTime()) return;
+
+        const isClipped =
+          segmentStart.getTime() !== activityStart.getTime() ||
+          segmentEnd.getTime() !== activityEnd.getTime();
+
         result.push({
-          ...a,
-          id: `${a.id}-spill`,
-          startTime: dayStart.toISOString(),
-          endTime: clippedEnd.toISOString(),
-          duration: Math.round((clippedEnd.getTime() - dayStart.getTime()) / 60000),
-          isOngoing: activeDate >= today,
+          ...activity,
+          id: isClipped ? `${activity.id}-spill` : activity.id,
+          startTime: segmentStart.toISOString(),
+          endTime: segmentEnd.toISOString(),
+          duration: Math.round((segmentEnd.getTime() - segmentStart.getTime()) / 60000),
+          isOngoing: activity.isOngoing && activeDate === today,
         });
-      } else if (a.endTime) {
-        const end = new Date(a.endTime);
-        if (end > dayStart) {
-          const clippedEnd = end > dayEnd ? dayEnd : end;
-          result.push({
-            ...a,
-            id: `${a.id}-spill`,
-            startTime: dayStart.toISOString(),
-            endTime: clippedEnd.toISOString(),
-            duration: Math.round((clippedEnd.getTime() - dayStart.getTime()) / 60000),
-            isOngoing: false,
-          });
-        }
-      }
+      });
     });
-    
-    // Add this day's activities, clipping display at midnight but NOT stopping ongoing
-    dayActivities.forEach(a => {
-      const start = new Date(a.startTime);
-      if (a.endTime) {
-        const end = new Date(a.endTime);
-        if (end > dayEnd) {
-          // Clip display to end of day — the activity continues into next day
-          result.push({
-            ...a,
-            endTime: dayEnd.toISOString(),
-            duration: Math.round((dayEnd.getTime() - start.getTime()) / 60000),
-            isOngoing: false,
-          });
-        } else {
-          result.push(a);
-        }
-      } else if (a.isOngoing) {
-        // Keep ongoing as-is — do NOT auto-stop at midnight
-        result.push(a);
-      } else {
-        result.push(a);
-      }
-    });
-    
+
+    result.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     return result;
   }, [allData, activeDate, today]);
 
