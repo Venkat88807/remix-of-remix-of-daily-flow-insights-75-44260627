@@ -162,11 +162,11 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 <span
                   className="px-2 py-0.5 rounded text-xs font-medium"
                   style={{
-                    backgroundColor: CATEGORY_COLORS[activity.category],
+                    backgroundColor: getCategoryColor(activity.category),
                     color: 'white',
                   }}
                 >
-                  {CATEGORY_LABELS[activity.category]}
+                  {getCategoryLabel(activity.category)}
                 </span>
                 <span>
                   {formatTime(activity.startTime)}
