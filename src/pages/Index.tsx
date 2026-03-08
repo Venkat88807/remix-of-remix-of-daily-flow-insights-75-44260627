@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { ParsedActivity, ActivityCategory, Activity } from '@/types/activity';
+import { ParsedActivity, ActivityCategory, Activity, getCustomCategories } from '@/types/activity';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
