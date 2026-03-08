@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, hasOngoingActivity } = await req.json();
+    const { message, hasOngoingActivity, categoryCorrections } = await req.json();
     
     // Input validation
     const MAX_MESSAGE_LENGTH = 500;
