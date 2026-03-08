@@ -90,7 +90,7 @@ const Index = () => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       const { data, error } = await supabase.functions.invoke('parse-activity', {
-        body: { message: text, hasOngoingActivity: !!ongoingActivity, categoryCorrections: getCategoryCorrections().slice(-20) },
+        body: { message: text, hasOngoingActivity: !!ongoingActivity, categoryCorrections: getCategoryCorrections().slice(-20), customCategories: getCustomCategories() },
       });
       if (!error && data && !data.error) {
         handleActivityParsed(data);
