@@ -5,6 +5,7 @@ import { Activity, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/
 import { AppUsageLog } from '@/hooks/useAppUsage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { ActivityTimeline } from './ActivityTimeline';
 import { cn } from '@/lib/utils';
 
 const APP_COLORS = [
@@ -36,6 +37,8 @@ interface UnifiedDayViewProps {
   activities: Activity[];
   appLogs: AppUsageLog[];
   selectedDate: string;
+  onDeleteActivity: (id: string) => void;
+  onUpdateActivity: (id: string, updates: Partial<Activity>) => void;
 }
 
 function fmtTime(date: Date): string {
@@ -54,7 +57,7 @@ function getAppColor(appName: string, index: number): string {
   return APP_COLORS[index % APP_COLORS.length];
 }
 
-export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate }) => {
+export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate, onDeleteActivity, onUpdateActivity }) => {
 
   // Build unified entries
   const { entries, appGroups, donutData, totalTrackedMinutes } = useMemo(() => {
@@ -331,7 +334,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         </Card>
       )}
 
-      {/* Visual Timeline */}
+      {/* Activity Timeline */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -339,59 +342,11 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No activities or app usage logged yet</p>
-          ) : (
-            <div className="space-y-0">
-              {entries.map((entry, i) => (
-                <div key={entry.id} className="flex gap-3 group">
-                  {/* Time column */}
-                  <div className="w-16 flex-shrink-0 text-right pt-2">
-                    <span className="text-xs text-muted-foreground tabular-nums">{fmtTime(entry.startTime)}</span>
-                  </div>
-                  {/* Line */}
-                  <div className="flex flex-col items-center">
-                    <div className={cn(
-                      "w-3 h-3 rounded-full border-2 mt-2.5 flex-shrink-0 z-10",
-                      entry.type === 'gap' ? 'border-muted-foreground bg-muted' : 'border-background'
-                    )} style={entry.type !== 'gap' ? { backgroundColor: entry.color, borderColor: entry.color } : {}} />
-                    {i < entries.length - 1 && (
-                      <div className="w-0.5 flex-1 bg-border min-h-[20px]" />
-                    )}
-                  </div>
-                  {/* Content */}
-                  <div className={cn(
-                    "flex-1 pb-4 pt-1",
-                    entry.type === 'gap' && 'opacity-50'
-                  )}>
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
-                        <span className={cn(
-                          "text-sm font-medium",
-                          entry.type === 'gap' && 'italic text-muted-foreground'
-                        )}>
-                          {entry.label}
-                        </span>
-                        {entry.isOngoing && (
-                          <span className="ml-1.5 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">Live</span>
-                        )}
-                        {entry.type === 'activity' && entry.category && (
-                          <span className="ml-1.5 text-xs text-muted-foreground">{CATEGORY_LABELS[entry.category]}</span>
-                        )}
-                        {entry.type === 'app' && (
-                          <span className="ml-1.5 text-xs text-muted-foreground">App</span>
-                        )}
-                      </div>
-                      <span className="text-xs font-medium tabular-nums text-muted-foreground">{fmtDur(entry.durationMinutes)}</span>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">
-                      {fmtTime(entry.startTime)} – {entry.isOngoing ? 'now' : fmtTime(entry.endTime)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <ActivityTimeline
+            activities={activities}
+            onDelete={onDeleteActivity}
+            onUpdate={onUpdateActivity}
+          />
         </CardContent>
       </Card>
     </div>

@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, hasOngoingActivity } = await req.json();
+    const { message, hasOngoingActivity, categoryCorrections } = await req.json();
     
     // Input validation
     const MAX_MESSAGE_LENGTH = 500;
@@ -44,10 +44,22 @@ serve(async (req) => {
     const istTime = new Date(now.getTime() + istOffset);
     const currentTimeIST = istTime.toISOString().slice(11, 16); // HH:MM format
     const currentDateIST = istTime.toISOString().slice(0, 10); // YYYY-MM-DD format
+    // Build category correction context from user's past edits
+    let correctionContext = '';
+    if (Array.isArray(categoryCorrections) && categoryCorrections.length > 0) {
+      const examples = categoryCorrections
+        .slice(-15)
+        .map((c: { description: string; fromCategory: string; toCategory: string }) =>
+          `"${c.description}" should be "${c.toCategory}" (NOT "${c.fromCategory}")`
+        )
+        .join('\n');
+      correctionContext = `\n\nIMPORTANT - The user has corrected these categorizations in the past. Learn from them and apply similar logic:\n${examples}\n`;
+    }
 
     const systemPrompt = `You are a time tracking assistant. Your job is to parse natural language activity descriptions and extract structured data.
 
 Current time in IST: ${currentTimeIST} on ${currentDateIST}
+${correctionContext}
 
 Given a user's message about what they're doing, determine:
 1. **intent**: What action the user wants:

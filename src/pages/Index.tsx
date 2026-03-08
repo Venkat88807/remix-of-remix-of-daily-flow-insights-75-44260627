@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Moon, Sun, Download, Upload, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, BellOff, MoreVertical } from 'lucide-react';
+import { getCategoryCorrections } from '@/hooks/useActivities';
 import { format, addDays, subDays } from 'date-fns';
 import { useActivities } from '@/hooks/useActivities';
 import { useAppUsageMonitor } from '@/hooks/useAppUsageMonitor';
@@ -16,7 +17,7 @@ import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
-import { SessionIntegrity } from '@/components/SessionIntegrity';
+
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { AppUsagePage } from '@/components/AppUsagePage';
 import { UnifiedDayView } from '@/components/UnifiedDayView';
@@ -89,7 +90,7 @@ const Index = () => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       const { data, error } = await supabase.functions.invoke('parse-activity', {
-        body: { message: text, hasOngoingActivity: !!ongoingActivity },
+        body: { message: text, hasOngoingActivity: !!ongoingActivity, categoryCorrections: getCategoryCorrections().slice(-20) },
       });
       if (!error && data && !data.error) {
         handleActivityParsed(data);
@@ -336,10 +337,9 @@ const Index = () => {
             <DistractionPrompt distraction={pendingDistraction} onRespond={handleDistractionRespond} />
 
             {/* Unified Day View */}
-            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} />
+            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} />
 
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-              <SessionIntegrity activities={activities} distractionHistory={distractionHistory} />
+            <div className="grid gap-4 sm:gap-6 grid-cols-1">
               <DailyInsights activities={activities} date={selectedDate} />
             </div>
           </TabsContent>
