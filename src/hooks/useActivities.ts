@@ -216,10 +216,11 @@ export const useActivities = (selectedDate?: string) => {
 
   // Delete an activity
   const deleteActivity = useCallback((activityId: string) => {
+    const realId = activityId.replace(/-spill$/, '');
     setAllData(prev => {
       return prev.map(day => ({
         ...day,
-        activities: day.activities.filter(a => a.id !== activityId),
+        activities: day.activities.filter(a => a.id !== realId),
       }));
     });
   }, []);
