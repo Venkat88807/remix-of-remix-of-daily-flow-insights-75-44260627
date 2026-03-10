@@ -280,6 +280,18 @@ Respond ONLY with valid JSON, no other text.`;
       parsed.category = "other";
     }
 
+    const explicitStartTime = extractExplicitStartTimeISO(message, currentDateIST);
+    const shouldOverrideWithExplicitTime = explicitStartTime && !hasExplicitDateReference(message);
+
+    if (shouldOverrideWithExplicitTime) {
+      parsed.startTime = explicitStartTime;
+    } else if (parsed.startTime) {
+      const parsedStart = new Date(parsed.startTime);
+      if (Number.isNaN(parsedStart.getTime())) {
+        parsed.startTime = null;
+      }
+    }
+
     return new Response(
       JSON.stringify(parsed),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
