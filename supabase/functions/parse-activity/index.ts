@@ -6,9 +6,101 @@ const corsHeaders = {
 };
 
 const BASE_CATEGORIES = [
-  'work', 'coding', 'meetings', 'meals', 'exercise', 
+  'work', 'coding', 'meetings', 'meals', 'exercise',
   'sleep', 'leisure', 'social', 'commute', 'personal_care', 'break', 'other'
 ];
+
+const WEEKDAY_PATTERN = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+const RELATIVE_DAY_PATTERN = /\b(yesterday|tomorrow|last|next|today)\b/i;
+const NUMERIC_DATE_PATTERN = /\b\d{1,2}[\/-]\d{1,2}(?:[\/-]\d{2,4})?\b/;
+
+const pad2 = (value: number) => String(value).padStart(2, '0');
+
+const getCurrentISTContext = () => {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+
+  const getPart = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
+  const year = getPart('year');
+  const month = getPart('month');
+  const day = getPart('day');
+  const hour = getPart('hour');
+  const minute = getPart('minute');
+
+  return {
+    currentDateIST: `${year}-${month}-${day}`,
+    currentTimeIST: `${hour}:${minute}`,
+  };
+};
+
+const buildISTISO = (date: string, hour: number, minute: number) => {
+  return `${date}T${pad2(hour)}:${pad2(minute)}:00+05:30`;
+};
+
+const hasExplicitDateReference = (message: string) => {
+  return RELATIVE_DAY_PATTERN.test(message) || WEEKDAY_PATTERN.test(message) || NUMERIC_DATE_PATTERN.test(message);
+};
+
+const extractExplicitStartTimeISO = (message: string, dateIST: string): string | null => {
+  const text = message.toLowerCase();
+
+  const hourMinuteWithMeridiem = text.match(/\b(?:at|from|since|by)?\s*(\d{1,2}):(\d{2})\s*(am|pm)\b/i);
+  if (hourMinuteWithMeridiem) {
+    const rawHour = Number(hourMinuteWithMeridiem[1]);
+    const minute = Number(hourMinuteWithMeridiem[2]);
+    const meridiem = hourMinuteWithMeridiem[3].toLowerCase();
+
+    if (Number.isFinite(rawHour) && Number.isFinite(minute) && minute >= 0 && minute <= 59) {
+      let hour = rawHour;
+      if (rawHour <= 12) {
+        hour = rawHour % 12;
+        if (meridiem === 'pm') hour += 12;
+      }
+      if (hour >= 0 && hour <= 23) return buildISTISO(dateIST, hour, minute);
+    }
+  }
+
+  const hourOnlyWithMeridiem = text.match(/\b(?:at|from|since|by)?\s*(\d{1,2})\s*(am|pm)\b/i);
+  if (hourOnlyWithMeridiem) {
+    const rawHour = Number(hourOnlyWithMeridiem[1]);
+    const meridiem = hourOnlyWithMeridiem[2].toLowerCase();
+
+    if (Number.isFinite(rawHour)) {
+      let hour = rawHour;
+      if (rawHour <= 12) {
+        hour = rawHour % 12;
+        if (meridiem === 'pm') hour += 12;
+      }
+      if (hour >= 0 && hour <= 23) return buildISTISO(dateIST, hour, 0);
+    }
+  }
+
+  const hourMinute24h = text.match(/\b(?:at|from|since|by)?\s*(\d{1,2}):(\d{2})\b/);
+  if (hourMinute24h) {
+    const hour = Number(hourMinute24h[1]);
+    const minute = Number(hourMinute24h[2]);
+    if (
+      Number.isFinite(hour) &&
+      Number.isFinite(minute) &&
+      hour >= 0 &&
+      hour <= 23 &&
+      minute >= 0 &&
+      minute <= 59
+    ) {
+      return buildISTISO(dateIST, hour, minute);
+    }
+  }
+
+  return null;
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
