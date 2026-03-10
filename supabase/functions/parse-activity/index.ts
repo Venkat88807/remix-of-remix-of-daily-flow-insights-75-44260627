@@ -130,12 +130,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Get current time in IST for reference
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const istTime = new Date(now.getTime() + istOffset);
-    const currentTimeIST = istTime.toISOString().slice(11, 16); // HH:MM format
-    const currentDateIST = istTime.toISOString().slice(0, 10); // YYYY-MM-DD format
+    // Get current date/time in IST for prompt context
+    const { currentTimeIST, currentDateIST } = getCurrentISTContext();
     // Build category correction context from user's past edits
     let correctionContext = '';
     if (Array.isArray(categoryCorrections) && categoryCorrections.length > 0) {
