@@ -373,6 +373,10 @@ const Index = () => {
                 <InsightsPage allData={allData} distractionHistory={distractionHistory} />
               </TabsContent>
 
+              <TabsContent value="sleep" className="mt-4">
+                <SleepAnalysis allData={allData} />
+              </TabsContent>
+
               <TabsContent value="weekly" className="space-y-4 mt-4">
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w + 1)}>← Prev</Button>
