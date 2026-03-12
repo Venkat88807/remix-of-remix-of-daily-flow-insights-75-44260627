@@ -9,6 +9,7 @@ import { ActivityInput } from '@/components/ActivityInput';
 import { DailyInsights } from '@/components/DailyInsights';
 import { GapDetectionDialog } from '@/components/GapDetectionDialog';
 import { ManualActivityInput } from '@/components/ManualActivityInput';
+import { SleepLogger } from '@/components/SleepLogger';
 import { DistractionPrompt } from '@/components/DistractionPrompt';
 
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
@@ -17,6 +18,7 @@ import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
+import { SleepAnalysis } from '@/components/SleepAnalysis';
 
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { AppUsagePage } from '@/components/AppUsagePage';
@@ -325,7 +327,19 @@ const Index = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg">What are you doing?</CardTitle>
-                  <ManualActivityInput onAddActivity={handleManualActivity} />
+                  <div className="flex gap-2">
+                    <SleepLogger onAddSleep={(sleep) => {
+                      addActivity({
+                        description: sleep.description,
+                        category: sleep.category,
+                        startTime: sleep.startTime,
+                        endTime: sleep.endTime,
+                        duration: Math.round((new Date(sleep.endTime).getTime() - new Date(sleep.startTime).getTime()) / 60000),
+                        isOngoing: false,
+                      });
+                    }} />
+                    <ManualActivityInput onAddActivity={handleManualActivity} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ActivityInput onActivityParsed={handleActivityParsed} hasOngoingActivity={!!ongoingActivity} ongoingActivity={ongoingActivity} />
@@ -347,8 +361,9 @@ const Index = () => {
           {/* ===== ANALYSIS TAB ===== */}
           <TabsContent value="analysis" className="space-y-6">
             <Tabs defaultValue="overview">
-              <TabsList className="w-full justify-start">
+              <TabsList className="w-full justify-start overflow-x-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="sleep">Sleep</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly</TabsTrigger>
@@ -356,6 +371,10 @@ const Index = () => {
 
               <TabsContent value="overview" className="mt-4 space-y-4">
                 <InsightsPage allData={allData} distractionHistory={distractionHistory} />
+              </TabsContent>
+
+              <TabsContent value="sleep" className="mt-4">
+                <SleepAnalysis allData={allData} />
               </TabsContent>
 
               <TabsContent value="weekly" className="space-y-4 mt-4">
