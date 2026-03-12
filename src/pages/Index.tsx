@@ -9,6 +9,7 @@ import { ActivityInput } from '@/components/ActivityInput';
 import { DailyInsights } from '@/components/DailyInsights';
 import { GapDetectionDialog } from '@/components/GapDetectionDialog';
 import { ManualActivityInput } from '@/components/ManualActivityInput';
+import { SleepLogger } from '@/components/SleepLogger';
 import { DistractionPrompt } from '@/components/DistractionPrompt';
 
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
