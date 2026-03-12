@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2, Moon, Sun } from 'lucide-react';
 import { Activity, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
 import { Button } from '@/components/ui/button';
@@ -132,6 +132,78 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
         }
 
         const activity = item.data;
+        const isSleep = activity.category === 'sleep';
+
+        if (isSleep) {
+          const durationMs = activity.endTime
+            ? new Date(activity.endTime).getTime() - new Date(activity.startTime).getTime()
+            : 0;
+          const durationHrs = Math.floor(durationMs / 3600000);
+          const durationMins = Math.round((durationMs % 3600000) / 60000);
+
+          return (
+            <div key={activity.id} className="relative">
+              {/* Fell asleep marker */}
+              <div className="flex items-center gap-3 p-3 rounded-t-lg border border-b-0 bg-[hsl(220_70%_50%/0.08)] border-[hsl(220_70%_50%/0.3)]">
+                <div className="w-8 h-8 rounded-full bg-[hsl(220_70%_50%)] flex items-center justify-center shrink-0">
+                  <Moon className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">Fell asleep</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(activity.startTime), 'EEE, MMM d · HH:mm')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Duration connector */}
+              <div className="flex items-center gap-3 px-3 py-2 border-x bg-[hsl(220_70%_50%/0.04)] border-[hsl(220_70%_50%/0.3)]">
+                <div className="w-8 flex justify-center shrink-0">
+                  <div className="w-0.5 h-6 bg-[hsl(220_70%_50%/0.3)]" />
+                </div>
+                <span className="text-xs font-bold text-muted-foreground tabular-nums">
+                  {durationHrs > 0 ? `${durationHrs}h ${durationMins}m` : `${durationMins}m`} of sleep
+                </span>
+              </div>
+
+              {/* Woke up marker */}
+              <div className="flex items-center gap-3 p-3 rounded-b-lg border border-t-0 bg-[hsl(40_80%_55%/0.08)] border-[hsl(220_70%_50%/0.3)]">
+                <div className="w-8 h-8 rounded-full bg-[hsl(40_80%_55%)] flex items-center justify-center shrink-0">
+                  <Sun className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">Woke up</p>
+                  <p className="text-xs text-muted-foreground">
+                    {activity.endTime
+                      ? format(new Date(activity.endTime), 'EEE, MMM d · HH:mm')
+                      : 'Still sleeping...'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground h-7 w-7"
+                    onClick={() => setEditingActivity(activity)}
+                    aria-label="Edit sleep entry"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive h-7 w-7"
+                    onClick={() => setDeletingActivity(activity)}
+                    aria-label="Delete sleep entry"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div
             key={activity.id}
