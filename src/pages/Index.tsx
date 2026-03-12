@@ -18,6 +18,7 @@ import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
+import { SleepAnalysis } from '@/components/SleepAnalysis';
 
 import { WhitelistApps } from '@/components/WhitelistApps';
 import { AppUsagePage } from '@/components/AppUsagePage';
