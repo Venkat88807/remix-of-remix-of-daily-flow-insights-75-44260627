@@ -361,8 +361,9 @@ const Index = () => {
           {/* ===== ANALYSIS TAB ===== */}
           <TabsContent value="analysis" className="space-y-6">
             <Tabs defaultValue="overview">
-              <TabsList className="w-full justify-start">
+              <TabsList className="w-full justify-start overflow-x-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="sleep">Sleep</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly</TabsTrigger>
