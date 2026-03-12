@@ -21,16 +21,21 @@ interface EditActivityDialogProps {
   onSave: (activityId: string, updates: Partial<Activity>) => void;
 }
 
+const formatDateForInput = (isoString: string) => {
+  const date = new Date(isoString);
+  return format(date, 'yyyy-MM-dd');
+};
+
 const formatTimeForInput = (isoString: string) => {
   const date = new Date(isoString);
   return format(date, 'HH:mm');
 };
 
-const parseTimeToISO = (timeString: string, referenceDate: string): string => {
-  const [hours, minutes] = timeString.split(':').map(Number);
-  const refDate = new Date(referenceDate);
-  refDate.setHours(hours, minutes, 0, 0);
-  return refDate.toISOString();
+const buildISO = (dateStr: string, timeStr: string): string => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const d = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return d.toISOString();
 };
 
 export const EditActivityDialog: React.FC<EditActivityDialogProps> = ({
@@ -41,23 +46,32 @@ export const EditActivityDialog: React.FC<EditActivityDialogProps> = ({
 }) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<ActivityCategory>('other');
+  const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
 
   useEffect(() => {
     if (activity) {
       setDescription(activity.description);
       setCategory(activity.category);
+      setStartDate(formatDateForInput(activity.startTime));
       setStartTime(formatTimeForInput(activity.startTime));
-      setEndTime(activity.endTime && !activity.isOngoing ? formatTimeForInput(activity.endTime) : '');
+      if (activity.endTime && !activity.isOngoing) {
+        setEndDate(formatDateForInput(activity.endTime));
+        setEndTime(formatTimeForInput(activity.endTime));
+      } else {
+        setEndDate('');
+        setEndTime('');
+      }
     }
   }, [activity]);
 
   const handleSave = () => {
-    if (!activity) return;
+    if (!activity || !startDate || !startTime) return;
 
-    const newStartTime = parseTimeToISO(startTime, activity.startTime);
-    const newEndTime = endTime ? parseTimeToISO(endTime, activity.startTime) : undefined;
+    const newStartTime = buildISO(startDate, startTime);
+    const newEndTime = endDate && endTime ? buildISO(endDate, endTime) : undefined;
 
     onSave(activity.id, {
       description,
@@ -93,29 +107,39 @@ export const EditActivityDialog: React.FC<EditActivityDialogProps> = ({
             <Label htmlFor="category">Category</Label>
             <CategorySelect value={category} onValueChange={setCategory} id="category" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time</Label>
+          <div className="space-y-2">
+            <Label>Start</Label>
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                id="startTime"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              <Input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
+          </div>
+          <div className="space-y-2">
+            <Label>End</Label>
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                id="endTime"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder={activity.isOngoing ? '' : ''}
+              />
+              <Input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                placeholder={activity.isOngoing ? 'Ongoing' : ''}
               />
-              {activity.isOngoing && !endTime && (
-                <p className="text-xs text-muted-foreground">Leave empty to keep ongoing</p>
-              )}
             </div>
+            {activity.isOngoing && !endTime && (
+              <p className="text-xs text-muted-foreground">Leave empty to keep ongoing</p>
+            )}
           </div>
         </div>
         <DialogFooter>
