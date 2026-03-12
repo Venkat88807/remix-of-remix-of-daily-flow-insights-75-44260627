@@ -327,7 +327,19 @@ const Index = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg">What are you doing?</CardTitle>
-                  <ManualActivityInput onAddActivity={handleManualActivity} />
+                  <div className="flex gap-2">
+                    <SleepLogger onAddSleep={(sleep) => {
+                      addActivity({
+                        description: sleep.description,
+                        category: sleep.category,
+                        startTime: sleep.startTime,
+                        endTime: sleep.endTime,
+                        duration: Math.round((new Date(sleep.endTime).getTime() - new Date(sleep.startTime).getTime()) / 60000),
+                        isOngoing: false,
+                      });
+                    }} />
+                    <ManualActivityInput onAddActivity={handleManualActivity} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ActivityInput onActivityParsed={handleActivityParsed} hasOngoingActivity={!!ongoingActivity} ongoingActivity={ongoingActivity} />
