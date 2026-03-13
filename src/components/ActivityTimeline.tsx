@@ -141,6 +141,44 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
           );
         }
 
+        if (item.type === 'snapshot') {
+          const s = item.data;
+          const startTime = new Date(s.startTime);
+          const endTime = new Date(s.endTime);
+          return (
+            <div
+              key={`snapshot-${s.id}`}
+              className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-destructive shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Screen Time During Session</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(startTime, 'HH:mm')} — {format(endTime, 'HH:mm')}
+                    {' · '}{s.sessionLabel}
+                  </p>
+                </div>
+                <span className="text-sm font-bold text-destructive tabular-nums">
+                  {formatSeconds(s.totalDistractionSeconds)}
+                </span>
+              </div>
+              <div className="space-y-1 pl-6">
+                {s.diffs.map(d => (
+                  <div key={d.appName} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <AlertTriangle className="h-3 w-3 text-destructive" />
+                      {d.appName}
+                    </span>
+                    <span className="font-medium text-destructive tabular-nums">+{formatSeconds(d.diffSeconds)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        if (item.type !== 'activity') return null;
         const activity = item.data;
         const isSleep = activity.category === 'sleep';
 
