@@ -81,12 +81,8 @@ const Index = () => {
     });
   };
 
-  // Filter snapshot sessions for selected date
-  const todaySnapshots = snapshotSessions.filter(s => {
-    const endDate = new Date(s.endTime);
-    const key = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-    return key === (selectedDate || today);
-  });
+  // Filter snapshot sessions for selected date (computed after useActivities below)
+  const activeDate = selectedDate;
 
   const {
     activities,
