@@ -11,6 +11,8 @@ import { GapDetectionDialog } from '@/components/GapDetectionDialog';
 import { ManualActivityInput } from '@/components/ManualActivityInput';
 import { SleepLogger } from '@/components/SleepLogger';
 import { DistractionPrompt } from '@/components/DistractionPrompt';
+import { ScreentimeSnapshot, SnapshotSession } from '@/components/ScreentimeSnapshot';
+import { SessionIntegrity } from '@/components/SessionIntegrity';
 
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
