@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2, Moon, Sun } from 'lucide-react';
+import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2, Moon, Sun, Smartphone } from 'lucide-react';
 import { Activity, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
+import { SnapshotSession } from './ScreentimeSnapshot';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { EditActivityDialog } from './EditActivityDialog';
