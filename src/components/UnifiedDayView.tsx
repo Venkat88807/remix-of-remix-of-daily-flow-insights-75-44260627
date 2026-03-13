@@ -40,6 +40,7 @@ interface UnifiedDayViewProps {
   selectedDate: string;
   onDeleteActivity: (id: string) => void;
   onUpdateActivity: (id: string, updates: Partial<Activity>) => void;
+  snapshotSessions?: SnapshotSession[];
 }
 
 function fmtTime(date: Date): string {
