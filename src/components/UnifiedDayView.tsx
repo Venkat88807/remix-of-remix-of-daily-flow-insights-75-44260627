@@ -348,6 +348,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
             activities={activities}
             onDelete={onDeleteActivity}
             onUpdate={onUpdateActivity}
+            snapshotSessions={snapshotSessions}
           />
         </CardContent>
       </Card>
