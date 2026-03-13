@@ -23,11 +23,13 @@ interface ActivityTimelineProps {
   onDelete: (id: string) => void;
   onUpdate: (activityId: string, updates: Partial<Activity>) => void;
   distractionHistory?: DistractionEvent[];
+  snapshotSessions?: SnapshotSession[];
 }
 
 type TimelineItem =
   | { type: 'activity'; data: Activity; sortTime: number }
-  | { type: 'distraction'; data: DistractionEvent; sortTime: number };
+  | { type: 'distraction'; data: DistractionEvent; sortTime: number }
+  | { type: 'snapshot'; data: SnapshotSession; sortTime: number };
 
 const formatTime = (isoString: string) => {
   const date = new Date(isoString);
