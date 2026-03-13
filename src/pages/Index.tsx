@@ -382,7 +382,7 @@ const Index = () => {
             )}
 
             {/* Unified Day View */}
-            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} />
+            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} snapshotSessions={todaySnapshots} />
 
             {/* Session Integrity */}
             <SessionIntegrity
