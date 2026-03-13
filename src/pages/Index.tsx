@@ -373,8 +373,23 @@ const Index = () => {
             <GapDetectionDialog open={showGapDialog} onOpenChange={setShowGapDialog} gap={pendingGap} onFillGap={handleFillGap} onSkip={handleSkipGap} />
             <DistractionPrompt distraction={pendingDistraction} onRespond={handleDistractionRespond} />
 
+            {/* Screentime Snapshot */}
+            {isViewingToday && (
+              <ScreentimeSnapshot
+                onSessionCaptured={handleSnapshotSession}
+                currentActivity={ongoingActivity?.description}
+              />
+            )}
+
             {/* Unified Day View */}
             <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} />
+
+            {/* Session Integrity */}
+            <SessionIntegrity
+              activities={activities}
+              distractionHistory={distractionHistory}
+              snapshotSessions={todaySnapshots}
+            />
 
             <div className="grid gap-4 sm:gap-6 grid-cols-1">
               <DailyInsights activities={activities} date={selectedDate} />
