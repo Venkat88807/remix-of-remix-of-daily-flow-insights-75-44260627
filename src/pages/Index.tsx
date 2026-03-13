@@ -66,6 +66,27 @@ const Index = () => {
   const [showGapDialog, setShowGapDialog] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [snapshotSessions, setSnapshotSessions] = useState<SnapshotSession[]>(() => {
+    try {
+      const stored = localStorage.getItem('screentime-sessions');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const handleSnapshotSession = (session: SnapshotSession) => {
+    setSnapshotSessions(prev => {
+      const updated = [...prev, session];
+      localStorage.setItem('screentime-sessions', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Filter snapshot sessions for selected date
+  const todaySnapshots = snapshotSessions.filter(s => {
+    const endDate = new Date(s.endTime);
+    const key = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    return key === (selectedDate || today);
+  });
 
   const {
     activities,
