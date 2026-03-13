@@ -59,6 +59,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   onDelete,
   onUpdate,
   distractionHistory = [],
+  snapshotSessions = [],
 }) => {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null);
@@ -76,10 +77,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       }
     });
 
+    snapshotSessions.forEach(s => {
+      if (s.diffs.length > 0) {
+        items.push({ type: 'snapshot', data: s, sortTime: new Date(s.endTime).getTime() });
+      }
+    });
+
     // Sort most recent first
     items.sort((a, b) => b.sortTime - a.sortTime);
     return items;
-  }, [activities, distractionHistory]);
+  }, [activities, distractionHistory, snapshotSessions]);
 
   if (timelineItems.length === 0) {
     return (
