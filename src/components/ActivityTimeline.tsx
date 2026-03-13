@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2, Moon, Sun } from 'lucide-react';
+import { Clock, Trash2, Play, Pencil, AlertTriangle, CheckCircle2, Moon, Sun, Smartphone } from 'lucide-react';
 import { Activity, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
+import { SnapshotSession } from './ScreentimeSnapshot';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { EditActivityDialog } from './EditActivityDialog';
@@ -22,11 +23,13 @@ interface ActivityTimelineProps {
   onDelete: (id: string) => void;
   onUpdate: (activityId: string, updates: Partial<Activity>) => void;
   distractionHistory?: DistractionEvent[];
+  snapshotSessions?: SnapshotSession[];
 }
 
 type TimelineItem =
   | { type: 'activity'; data: Activity; sortTime: number }
-  | { type: 'distraction'; data: DistractionEvent; sortTime: number };
+  | { type: 'distraction'; data: DistractionEvent; sortTime: number }
+  | { type: 'snapshot'; data: SnapshotSession; sortTime: number };
 
 const formatTime = (isoString: string) => {
   const date = new Date(isoString);
@@ -56,6 +59,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   onDelete,
   onUpdate,
   distractionHistory = [],
+  snapshotSessions = [],
 }) => {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null);
@@ -73,10 +77,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       }
     });
 
+    snapshotSessions.forEach(s => {
+      if (s.diffs.length > 0) {
+        items.push({ type: 'snapshot', data: s, sortTime: new Date(s.endTime).getTime() });
+      }
+    });
+
     // Sort most recent first
     items.sort((a, b) => b.sortTime - a.sortTime);
     return items;
-  }, [activities, distractionHistory]);
+  }, [activities, distractionHistory, snapshotSessions]);
 
   if (timelineItems.length === 0) {
     return (
@@ -131,6 +141,44 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
           );
         }
 
+        if (item.type === 'snapshot') {
+          const s = item.data;
+          const startTime = new Date(s.startTime);
+          const endTime = new Date(s.endTime);
+          return (
+            <div
+              key={`snapshot-${s.id}`}
+              className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-destructive shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Screen Time During Session</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(startTime, 'HH:mm')} — {format(endTime, 'HH:mm')}
+                    {' · '}{s.sessionLabel}
+                  </p>
+                </div>
+                <span className="text-sm font-bold text-destructive tabular-nums">
+                  {formatSeconds(s.totalDistractionSeconds)}
+                </span>
+              </div>
+              <div className="space-y-1 pl-6">
+                {s.diffs.map(d => (
+                  <div key={d.appName} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <AlertTriangle className="h-3 w-3 text-destructive" />
+                      {d.appName}
+                    </span>
+                    <span className="font-medium text-destructive tabular-nums">+{formatSeconds(d.diffSeconds)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        if (item.type !== 'activity') return null;
         const activity = item.data;
         const isSleep = activity.category === 'sleep';
 

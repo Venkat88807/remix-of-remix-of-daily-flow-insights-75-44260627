@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Clock, Layers } from 'lucide-react';
 import { Activity, ActivityCategory, getCategoryColor, getCategoryLabel } from '@/types/activity';
 import { AppUsageLog } from '@/hooks/useAppUsage';
+import { SnapshotSession } from './ScreentimeSnapshot';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ActivityTimeline } from './ActivityTimeline';
@@ -39,6 +40,7 @@ interface UnifiedDayViewProps {
   selectedDate: string;
   onDeleteActivity: (id: string) => void;
   onUpdateActivity: (id: string, updates: Partial<Activity>) => void;
+  snapshotSessions?: SnapshotSession[];
 }
 
 function fmtTime(date: Date): string {
@@ -57,7 +59,7 @@ function getAppColor(appName: string, index: number): string {
   return APP_COLORS[index % APP_COLORS.length];
 }
 
-export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate, onDeleteActivity, onUpdateActivity }) => {
+export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appLogs, selectedDate, onDeleteActivity, onUpdateActivity, snapshotSessions = [] }) => {
 
   // Build unified entries
   const { entries, appGroups, donutData, totalTrackedMinutes } = useMemo(() => {
@@ -346,6 +348,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
             activities={activities}
             onDelete={onDeleteActivity}
             onUpdate={onUpdateActivity}
+            snapshotSessions={snapshotSessions}
           />
         </CardContent>
       </Card>

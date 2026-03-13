@@ -11,6 +11,8 @@ import { GapDetectionDialog } from '@/components/GapDetectionDialog';
 import { ManualActivityInput } from '@/components/ManualActivityInput';
 import { SleepLogger } from '@/components/SleepLogger';
 import { DistractionPrompt } from '@/components/DistractionPrompt';
+import { ScreentimeSnapshot, SnapshotSession } from '@/components/ScreentimeSnapshot';
+import { SessionIntegrity } from '@/components/SessionIntegrity';
 
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
@@ -64,6 +66,23 @@ const Index = () => {
   const [showGapDialog, setShowGapDialog] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [snapshotSessions, setSnapshotSessions] = useState<SnapshotSession[]>(() => {
+    try {
+      const stored = localStorage.getItem('screentime-sessions');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const handleSnapshotSession = (session: SnapshotSession) => {
+    setSnapshotSessions(prev => {
+      const updated = [...prev, session];
+      localStorage.setItem('screentime-sessions', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Filter snapshot sessions for selected date (computed after useActivities below)
+  const activeDate = selectedDate;
 
   const {
     activities,
@@ -81,6 +100,12 @@ const Index = () => {
   } = useActivities(selectedDate);
 
   const { logs: appUsageLogs } = useAppUsage();
+
+  const todaySnapshots = snapshotSessions.filter(s => {
+    const endDate = new Date(s.endTime);
+    const key = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    return key === (selectedDate || today);
+  });
 
   const {
     pendingDistraction,
@@ -350,8 +375,23 @@ const Index = () => {
             <GapDetectionDialog open={showGapDialog} onOpenChange={setShowGapDialog} gap={pendingGap} onFillGap={handleFillGap} onSkip={handleSkipGap} />
             <DistractionPrompt distraction={pendingDistraction} onRespond={handleDistractionRespond} />
 
+            {/* Screentime Snapshot */}
+            {isViewingToday && (
+              <ScreentimeSnapshot
+                onSessionCaptured={handleSnapshotSession}
+                currentActivity={ongoingActivity?.description}
+              />
+            )}
+
             {/* Unified Day View */}
-            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} />
+            <UnifiedDayView activities={activities} appLogs={appUsageLogs} selectedDate={selectedDate} onDeleteActivity={deleteActivity} onUpdateActivity={updateActivity} snapshotSessions={todaySnapshots} />
+
+            {/* Session Integrity */}
+            <SessionIntegrity
+              activities={activities}
+              distractionHistory={distractionHistory}
+              snapshotSessions={todaySnapshots}
+            />
 
             <div className="grid gap-4 sm:gap-6 grid-cols-1">
               <DailyInsights activities={activities} date={selectedDate} />
