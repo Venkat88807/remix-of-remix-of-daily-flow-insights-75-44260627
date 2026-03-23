@@ -232,7 +232,12 @@ const Index = () => {
     input.click();
   };
 
-  const handleClearAll = () => { clearAllData(); setShowClearDialog(false); toast.success('All data cleared'); };
+  const handleClearAll = async () => {
+    await clearAllData();
+    setSnapshotSessions([]);
+    setShowClearDialog(false);
+    toast.success('All data cleared');
+  };
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const [year, month, day] = selectedDate.split('-').map(Number);
