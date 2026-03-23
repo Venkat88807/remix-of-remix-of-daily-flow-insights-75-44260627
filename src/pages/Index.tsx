@@ -20,6 +20,7 @@ import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
 import { InsightsPage } from '@/components/InsightsPage';
 import { AppSessionAnalysis } from '@/components/AppSessionAnalysis';
 import { YearlyStats } from '@/components/YearlyStats';
+import { AllTimeStats } from '@/components/AllTimeStats';
 import { SleepAnalysis } from '@/components/SleepAnalysis';
 
 import { WhitelistApps } from '@/components/WhitelistApps';
@@ -412,6 +413,7 @@ const Index = () => {
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                <TabsTrigger value="alltime">All Time</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="mt-4 space-y-4">
@@ -443,6 +445,10 @@ const Index = () => {
               <TabsContent value="yearly" className="space-y-4 mt-4">
                 <YearlyStats allData={allData} distractionHistory={distractionHistory} />
                 <AppSessionAnalysis />
+              </TabsContent>
+
+              <TabsContent value="alltime" className="space-y-4 mt-4">
+                <AllTimeStats allData={allData} distractionHistory={distractionHistory} />
               </TabsContent>
             </Tabs>
           </TabsContent>
