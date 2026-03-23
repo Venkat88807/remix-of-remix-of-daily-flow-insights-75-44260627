@@ -292,10 +292,31 @@ export const useActivities = (selectedDate?: string) => {
     }
   }, []);
 
-  // Clear all data
-  const clearAllData = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+  // Clear all data — wipe everything
+  const clearAllData = useCallback(async () => {
+    // Clear all localStorage keys used by the app
+    const keysToRemove = [
+      STORAGE_KEY,
+      CORRECTIONS_KEY,
+      'screentime-sessions',
+      'screentime-pending-snapshot',
+      'app-session-times',
+      'custom-categories',
+      'theme-dark',
+    ];
+    keysToRemove.forEach(k => localStorage.removeItem(k));
     setAllData([]);
+
+    // Also clear Supabase app usage data
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.from('app_usage_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('app_distractions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('app_categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('app_usage_limits').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.error('Failed to clear Supabase data:', e);
+    }
   }, []);
 
   // Get all dates with data

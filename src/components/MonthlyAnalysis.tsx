@@ -39,10 +39,11 @@ export const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({
         const dayData = allData.find(d => d.date === dateStr);
         if (dayData) {
           dayData.activities.forEach(a => {
-            if (a.duration) {
-              totalLogged += a.duration;
+            const dur = Math.max(0, a.duration || 0);
+            if (dur > 0) {
+              totalLogged += dur;
               if (productiveCategories.includes(a.category)) {
-                work += a.duration;
+                work += dur;
               }
             }
           });
@@ -79,8 +80,9 @@ export const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({
         const dayData = allData.find(d => d.date === dateStr);
         if (dayData) {
           dayData.activities.forEach(a => {
-            if (a.duration && productiveCategories.includes(a.category)) {
-              workMins += a.duration;
+            const dur = Math.max(0, a.duration || 0);
+            if (dur > 0 && productiveCategories.includes(a.category)) {
+              workMins += dur;
             }
           });
         }

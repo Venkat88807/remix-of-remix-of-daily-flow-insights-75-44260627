@@ -39,9 +39,10 @@ export const WeeklyAnalysis: React.FC<WeeklyAnalysisProps> = ({
         const dayData = allData.find(d => d.date === dateStr);
         if (dayData) {
           dayData.activities.forEach(a => {
-            if (a.duration) {
+            const dur = Math.max(0, a.duration || 0);
+            if (dur > 0) {
               if (productiveCategories.includes(a.category)) {
-                work += a.duration;
+                work += dur;
               }
             }
           });
@@ -70,8 +71,9 @@ export const WeeklyAnalysis: React.FC<WeeklyAnalysisProps> = ({
 
       if (dayData) {
         dayData.activities.forEach(a => {
-          if (a.duration && productiveCategories.includes(a.category)) {
-            workMins += a.duration;
+          const dur = Math.max(0, a.duration || 0);
+          if (dur > 0 && productiveCategories.includes(a.category)) {
+            workMins += dur;
           }
         });
       }
