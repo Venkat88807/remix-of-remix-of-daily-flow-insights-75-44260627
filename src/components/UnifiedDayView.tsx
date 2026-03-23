@@ -141,7 +141,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
     const categoryTotals = new Map<string, { name: string; value: number; color: string }>();
     activities.forEach(a => {
       if (!a.duration && !a.isOngoing) return;
-      const dur = a.duration || (a.isOngoing ? (Date.now() - new Date(a.startTime).getTime()) / 60000 : 0);
+      const dur = Math.max(0, a.duration || (a.isOngoing ? (Date.now() - new Date(a.startTime).getTime()) / 60000 : 0));
       const key = `activity-${a.category}`;
       const existing = categoryTotals.get(key);
       if (existing) existing.value += dur;
@@ -287,7 +287,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
 
                 // Manual activities by category
                 activities.forEach(a => {
-                  const dur = a.duration || (a.isOngoing ? (Date.now() - new Date(a.startTime).getTime()) / 60000 : 0);
+                  const dur = Math.max(0, a.duration || (a.isOngoing ? (Date.now() - new Date(a.startTime).getTime()) / 60000 : 0));
                   if (dur <= 0) return;
                   const existing = allTotals.get(`cat-${a.category}`);
                   if (existing) existing.minutes += dur;
