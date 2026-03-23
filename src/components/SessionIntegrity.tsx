@@ -67,8 +67,8 @@ export const SessionIntegrity: React.FC<SessionIntegrityProps> = ({
     setClassifications(prev => {
       const key = appName.toLowerCase();
       const current = prev[key];
-      const next = current === 'productive' ? 'distractive' : 'productive';
-      const updated = { ...prev, [key]: next };
+      const next: 'productive' | 'distractive' = current === 'productive' ? 'distractive' : 'productive';
+      const updated: AppClassification = { ...prev, [key]: next };
       saveClassifications(updated);
       return updated;
     });
