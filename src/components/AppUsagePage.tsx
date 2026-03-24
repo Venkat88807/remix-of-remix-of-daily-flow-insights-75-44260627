@@ -154,14 +154,17 @@ export const AppUsagePage: React.FC = () => {
         return;
       }
 
-      // Deduplicate across screenshots
-      const seen = new Set<string>();
-      const deduped = allEntries.filter(e => {
-        const key = `${e.appName.toLowerCase()}|${e.durationSeconds}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
+      // Merge across screenshots: take the MAX duration per app
+      // (since digital wellbeing shows cumulative totals, later screenshots have higher values)
+      const appMax = new Map<string, { appName: string; time?: string | null; durationSeconds: number }>();
+      allEntries.forEach(e => {
+        const key = e.appName.toLowerCase();
+        const existing = appMax.get(key);
+        if (!existing || e.durationSeconds > existing.durationSeconds) {
+          appMax.set(key, e);
+        }
       });
+      const deduped = Array.from(appMax.values());
 
       setParsedEntries(deduped.map((e: any) => ({ ...e, selected: true })));
       setShowImport(true);
