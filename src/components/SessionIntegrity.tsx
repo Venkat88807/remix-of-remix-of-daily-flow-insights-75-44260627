@@ -197,44 +197,46 @@ export const SessionIntegrity: React.FC<SessionIntegrityProps> = ({
         )}
 
         {appBreakdown.length > 0 && (
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2 pt-1">
             <p className="text-xs font-medium flex items-center gap-1.5">
               <Smartphone className="h-3 w-3" /> App usage during work
             </p>
-            <p className="text-[10px] text-muted-foreground">Tap to toggle • Long-press to set permanently</p>
-            {appBreakdown.map(app => (
-              <button
-                key={app.name}
-                onClick={() => toggleAppClassification(app.name)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  markGlobalProductive(app.name, !app.isProductive);
-                }}
-                className={`w-full flex items-center justify-between text-xs px-2 py-1.5 rounded transition-colors ${
-                  app.isProductive
-                    ? 'bg-chart-2/10 hover:bg-chart-2/20'
-                    : 'bg-destructive/5 hover:bg-destructive/10'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {app.isProductive ? (
-                    <CheckCircle2 className="h-3 w-3 text-chart-2" />
-                  ) : (
-                    <AlertTriangle className="h-3 w-3 text-destructive" />
-                  )}
-                  {app.name}
-                  <Badge variant="outline" className="text-[9px] h-4 px-1">
-                    {app.isProductive ? 'productive' : 'distractive'}
-                  </Badge>
-                  {globalWorkApps.has(app.name.toLowerCase()) && (
-                    <Settings2 className="h-2.5 w-2.5 text-muted-foreground" />
-                  )}
-                </span>
-                <span className={`font-medium ${app.isProductive ? 'text-chart-2' : 'text-destructive'}`}>
-                  {fmtSec(app.seconds)}
-                </span>
-              </button>
-            ))}
+            {appBreakdown.map(app => {
+              const isGlobal = globalWorkApps.has(app.name.toLowerCase());
+              return (
+                <div key={app.name} className="flex items-center gap-2 py-1.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm truncate">{app.name}</span>
+                      <span className="text-xs text-muted-foreground">{fmtSec(app.seconds)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleAppClassification(app.name)}
+                      className={`text-[10px] font-medium px-2 py-1 rounded-full transition-colors ${
+                        app.isProductive
+                          ? 'bg-chart-2/15 text-chart-2'
+                          : 'bg-destructive/10 text-destructive'
+                      }`}
+                    >
+                      {app.isProductive ? '✓ Work' : '✗ Waste'}
+                    </button>
+                    <button
+                      onClick={() => markGlobalProductive(app.name, !isGlobal)}
+                      className={`p-1 rounded transition-colors ${
+                        isGlobal
+                          ? 'text-primary bg-primary/10'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      }`}
+                      title={isGlobal ? 'Always marked as work' : 'Pin as always work'}
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>
