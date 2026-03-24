@@ -13,6 +13,7 @@ import { SleepLogger } from '@/components/SleepLogger';
 import { DistractionPrompt } from '@/components/DistractionPrompt';
 import { ScreentimeSnapshot, SnapshotSession } from '@/components/ScreentimeSnapshot';
 import { SessionIntegrity } from '@/components/SessionIntegrity';
+import { VisualExport } from '@/components/VisualExport';
 
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
@@ -277,7 +278,7 @@ const Index = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={exportData}>
-                    <Download className="h-4 w-4 mr-2" /> Export Data
+                    <Download className="h-4 w-4 mr-2" /> Export JSON
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleImport}>
                     <Upload className="h-4 w-4 mr-2" /> Import Data
