@@ -91,7 +91,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
     // App logs for selected date
     const dayLogs = appLogs.filter(l => l.usageDate === selectedDate);
     
-    // Group apps
+    // Group apps from logs
     const groups = new Map<string, AppGroup>();
     dayLogs.forEach(log => {
       if (!appColorMap.has(log.appName)) {
@@ -109,7 +109,23 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
         endTime: log.endedAt,
         durationSeconds: log.durationSeconds,
       });
+    });
 
+    // Also merge snapshot session diffs into app groups
+    snapshotSessions.forEach(s => {
+      s.diffs.forEach(d => {
+        const key = d.appName;
+        if (!appColorMap.has(key)) {
+          appColorMap.set(key, getAppColor(key, colorIdx++));
+        }
+        const color = appColorMap.get(key)!;
+        if (!groups.has(key)) {
+          groups.set(key, { appName: key, totalSeconds: 0, sessions: [], color });
+        }
+        const g = groups.get(key)!;
+        g.totalSeconds += d.diffSeconds;
+        g.sessions.push({ durationSeconds: d.diffSeconds });
+      });
     });
 
     // Sort by start time
