@@ -191,7 +191,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
       donutData: donut,
       totalTrackedMinutes: totalTracked,
     };
-  }, [activities, appLogs, selectedDate]);
+  }, [activities, appLogs, selectedDate, snapshotSessions]);
 
   const coveragePct = Math.min(100, Math.round((totalTrackedMinutes / (24 * 60)) * 100));
 
