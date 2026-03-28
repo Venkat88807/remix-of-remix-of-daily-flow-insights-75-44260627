@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarDays, Clock, TrendingUp, Activity as ActivityIcon, Shield, Smartphone, Flame } from 'lucide-react';
+import { CalendarDays, Clock, TrendingUp, Shield, Smartphone, Flame } from 'lucide-react';
 import { DayData, CATEGORY_COLORS, CATEGORY_LABELS, ActivityCategory } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
 import { SnapshotSession } from './ScreentimeSnapshot';
@@ -13,10 +13,11 @@ interface AllTimeStatsProps {
 }
 
 function formatDuration(minutes: number): string {
-  if (minutes < 1) return '0m';
-  if (minutes < 60) return `${Math.round(minutes)}m`;
-  const hrs = Math.floor(minutes / 60);
-  const mins = Math.round(minutes % 60);
+  const m = Math.max(0, Math.round(minutes));
+  if (m < 1) return '0m';
+  if (m < 60) return `${m}m`;
+  const hrs = Math.floor(m / 60);
+  const mins = m % 60;
   if (hrs < 24) return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
   const days = Math.floor(hrs / 24);
   return `${days}d ${hrs % 24}h`;
@@ -27,19 +28,25 @@ interface AppUsageStat {
   totalSeconds: number;
 }
 
+interface AppCategory {
+  app_name: string;
+  is_work_app: boolean | null;
+}
+
 export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distractionHistory }) => {
   const [appUsageStats, setAppUsageStats] = useState<AppUsageStat[]>([]);
+  const [appCategories, setAppCategories] = useState<AppCategory[]>([]);
 
-  // Load all-time app usage from backend
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from('app_usage_logs')
-        .select('app_name, duration_seconds');
+      const [{ data: logs }, { data: cats }] = await Promise.all([
+        supabase.from('app_usage_logs').select('app_name, duration_seconds'),
+        supabase.from('app_categories').select('app_name, is_work_app'),
+      ]);
 
-      if (data) {
+      if (logs) {
         const totals = new Map<string, number>();
-        data.forEach(d => {
+        logs.forEach(d => {
           totals.set(d.app_name, (totals.get(d.app_name) || 0) + d.duration_seconds);
         });
         setAppUsageStats(
@@ -48,11 +55,11 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
             .sort((a, b) => b.totalSeconds - a.totalSeconds)
         );
       }
+      if (cats) setAppCategories(cats);
     };
     load();
   }, []);
 
-  // Load all snapshot sessions for all-time integrity
   const allSnapshotSessions: SnapshotSession[] = useMemo(() => {
     try {
       const stored = localStorage.getItem('screentime-sessions');
@@ -60,10 +67,27 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
     } catch { return []; }
   }, []);
 
+  const isAppProductive = (appName: string): boolean | null => {
+    try {
+      const local = localStorage.getItem('session-app-classifications');
+      if (local) {
+        const parsed = JSON.parse(local);
+        for (const sessionId of Object.keys(parsed)) {
+          const cls = parsed[sessionId];
+          if (cls[appName] !== undefined) {
+            return cls[appName] === 'productive';
+          }
+        }
+      }
+    } catch {}
+    const cat = appCategories.find(c => c.app_name.toLowerCase() === appName.toLowerCase());
+    if (cat) return cat.is_work_app === true;
+    return null;
+  };
+
   const stats = useMemo(() => {
     const productiveCategories = ['work', 'coding', 'meetings'];
 
-    // All data (not filtered to year)
     const daysTracked = allData.filter(d => d.activities.length > 0).length;
     const totalActivities = allData.reduce((sum, d) => sum + d.activities.length, 0);
 
@@ -71,7 +95,6 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
     let totalTrackedMin = 0;
     const categoryMinutes: Record<string, number> = {};
 
-    // First tracked date
     const sortedDates = allData.filter(d => d.activities.length > 0).map(d => d.date).sort();
     const firstDate = sortedDates[0] || null;
 
@@ -88,27 +111,36 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
       });
     });
 
-    // All-time distraction
-    const totalDistractionMin = distractionHistory
+    // Add productive app usage to work totals
+    let productiveAppMin = 0;
+    let distractiveAppMin = 0;
+    appUsageStats.forEach(app => {
+      const mins = Math.round(app.totalSeconds / 60);
+      const productive = isAppProductive(app.appName);
+      if (productive === true) productiveAppMin += mins;
+      else if (productive === false) distractiveAppMin += mins;
+    });
+
+    totalProductiveMin += productiveAppMin;
+
+    // Native distraction
+    const nativeDistractionMin = distractionHistory
       .filter(d => d.userResponded && !d.isWorkRelated && d.durationSeconds)
       .reduce((sum, d) => sum + (d.durationSeconds || 0), 0) / 60;
 
-    // Snapshot-based distraction (all time)
+    // Snapshot-based distraction
     const snapshotDistractionMin = allSnapshotSessions
       .reduce((sum, s) => sum + Math.round(s.totalDistractionSeconds / 60), 0);
 
-    const totalAllDistraction = totalDistractionMin + snapshotDistractionMin;
+    const totalAllDistraction = nativeDistractionMin + snapshotDistractionMin + distractiveAppMin;
 
-    // All-time integrity
+    // Integrity
     const actualWork = Math.max(0, totalProductiveMin - totalAllDistraction);
     const integrityPct = totalProductiveMin > 0
       ? Math.round((actualWork / totalProductiveMin) * 100)
       : 100;
 
-    // Avg productive per day
     const avgProductivePerDay = daysTracked > 0 ? totalProductiveMin / daysTracked : 0;
-
-    // Total app screen time
     const totalAppSeconds = appUsageStats.reduce((s, a) => s + a.totalSeconds, 0);
 
     // Current streak
@@ -133,7 +165,7 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
 
-    // Monthly trend (all months ever)
+    // Monthly trend (include app usage)
     const monthlyMap = new Map<string, { productive: number; total: number }>();
     allData.forEach(d => {
       const monthKey = d.date.substring(0, 7);
@@ -150,7 +182,7 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
 
     const monthlyData = Array.from(monthlyMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-12) // Last 12 months
+      .slice(-12)
       .map(([key, val]) => {
         const [y, m] = key.split('-').map(Number);
         const label = new Date(y, m - 1, 1).toLocaleDateString('en', { month: 'short', year: '2-digit' });
@@ -160,6 +192,11 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
           total: Math.round(val.total / 60),
         };
       });
+
+    // Split apps into productive/distractive
+    const productiveApps = appUsageStats.filter(a => isAppProductive(a.appName) === true);
+    const distractiveApps = appUsageStats.filter(a => isAppProductive(a.appName) === false);
+    const unclassifiedApps = appUsageStats.filter(a => isAppProductive(a.appName) === null);
 
     return {
       daysTracked,
@@ -175,13 +212,51 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
       actualWork,
       totalAppSeconds,
       firstDate,
+      productiveAppMin,
+      distractiveAppMin,
+      productiveApps,
+      distractiveApps,
+      unclassifiedApps,
     };
-  }, [allData, distractionHistory, allSnapshotSessions, appUsageStats]);
+  }, [allData, distractionHistory, allSnapshotSessions, appUsageStats, appCategories]);
 
   const APP_COLORS = [
     'hsl(260 60% 55%)', 'hsl(180 60% 45%)', 'hsl(30 80% 55%)',
     'hsl(340 70% 55%)', 'hsl(200 70% 50%)', 'hsl(100 50% 45%)',
   ];
+
+  const renderAppList = (apps: AppUsageStat[], label: string, colorOffset = 0) => {
+    if (apps.length === 0) return null;
+    const maxSecs = apps[0]?.totalSeconds || 1;
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+        {apps.slice(0, 8).map((app, i) => (
+          <div key={app.appName} className="flex items-center gap-3">
+            <div
+              className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold text-primary-foreground flex-shrink-0"
+              style={{ backgroundColor: APP_COLORS[(i + colorOffset) % APP_COLORS.length] }}
+            >
+              {app.appName.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm font-medium flex-1 truncate">{app.appName}</span>
+            <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${(app.totalSeconds / maxSecs) * 100}%`,
+                  backgroundColor: APP_COLORS[(i + colorOffset) % APP_COLORS.length],
+                }}
+              />
+            </div>
+            <span className="text-xs font-bold tabular-nums w-14 text-right">
+              {formatDuration(app.totalSeconds / 60)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -240,7 +315,7 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
         </p>
       )}
 
-      {/* All-time app usage */}
+      {/* All-time app usage - split by classification */}
       {appUsageStats.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -248,38 +323,15 @@ export const AllTimeStats: React.FC<AllTimeStatsProps> = ({ allData, distraction
               <Smartphone className="h-4 w-4 text-primary" /> All-Time Screen Time
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-3">
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
               Total: {formatDuration(stats.totalAppSeconds / 60)}
+              {stats.productiveAppMin > 0 && <span className="text-chart-2 ml-2">✓ {formatDuration(stats.productiveAppMin)} productive</span>}
+              {stats.distractiveAppMin > 0 && <span className="text-destructive ml-2">✗ {formatDuration(stats.distractiveAppMin)} distractive</span>}
             </p>
-            <div className="space-y-2">
-              {appUsageStats.slice(0, 10).map((app, i) => {
-                const maxSecs = appUsageStats[0]?.totalSeconds || 1;
-                return (
-                  <div key={app.appName} className="flex items-center gap-3">
-                    <div
-                      className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold text-primary-foreground flex-shrink-0"
-                      style={{ backgroundColor: APP_COLORS[i % APP_COLORS.length] }}
-                    >
-                      {app.appName.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-sm font-medium flex-1 truncate">{app.appName}</span>
-                    <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${(app.totalSeconds / maxSecs) * 100}%`,
-                          backgroundColor: APP_COLORS[i % APP_COLORS.length],
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs font-bold tabular-nums w-14 text-right">
-                      {formatDuration(app.totalSeconds / 60)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            {renderAppList(stats.productiveApps, '✓ Productive Apps', 0)}
+            {renderAppList(stats.distractiveApps, '✗ Distractive Apps', 3)}
+            {renderAppList(stats.unclassifiedApps, 'Unclassified', 1)}
           </CardContent>
         </Card>
       )}
