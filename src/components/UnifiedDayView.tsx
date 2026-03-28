@@ -123,7 +123,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
           groups.set(key, { appName: key, totalSeconds: 0, sessions: [], color });
         }
         const g = groups.get(key)!;
-        g.totalSeconds += d.diffSeconds;
+        g.totalSeconds += Math.max(0, d.diffSeconds);
         g.sessions.push({ durationSeconds: d.diffSeconds });
       });
     });
