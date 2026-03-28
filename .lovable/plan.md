@@ -1,46 +1,38 @@
 
 
-# Simplify the "Where Did My Time Go?" Experience
+# Include App Usage in Monthly/All-Time Stats + Track Distractions
 
-## The Core Insight
-You don't need a detailed app usage timeline. At 10pm, you want one glance that answers: "where did my day go?" That means your activities + total screentime per app, not individual app sessions.
+## What This Solves
+Currently, MonthlyAnalysis and AllTimeStats only count manual activity logs (work, coding, meetings) for work totals and only native distraction events for distraction totals. Screenshot-based app usage (from `app_usage_logs` and `screentime-sessions`) is completely ignored in these views. The user wants:
+1. Productive app usage (apps classified as work) to count toward work totals
+2. Distractive app usage to count toward distraction totals
+3. This to work across monthly and all-time views
 
-## Current Problem — Too Much Redundancy on Today Tab
-Right now the Today tab shows:
-1. **UnifiedDayView** — coverage bar, donut chart, app summary card, activity timeline
-2. **Activity Timeline** card (separate, duplicate of what's in UnifiedDayView)
-3. **TimeCharts** (another donut/bar chart of just activities)
-4. **AppSessionTimer** 
-5. **SessionIntegrity**
-6. **DailyInsights**
+## Changes
 
-That's 6 cards/sections, with the activity timeline shown twice and two separate donut charts.
+### 1. `src/components/MonthlyAnalysis.tsx`
+- Accept `snapshotSessions` as a prop (from localStorage `screentime-sessions`)
+- Load app classifications from Supabase `app_categories` table
+- For each day in the month, aggregate snapshot diffs: apps marked productive add to work, apps marked distractive add to distraction totals
+- Also query `app_usage_logs` for the month's date range to include imported screenshot data classified by `app_categories.is_work_app`
+- Show a new "Screen Time" stat card alongside Work/Distraction/Integrity
 
-## Plan
+### 2. `src/components/AllTimeStats.tsx`
+- Already loads `appUsageStats` and `allSnapshotSessions` but doesn't classify them
+- Load `app_categories` to know which apps are productive vs distractive
+- Split `appUsageStats` into productive and distractive buckets
+- Add productive app time to `totalProductiveMin`
+- Add distractive app time to `totalDistractionMin`
+- Show separate "Productive Apps" and "Distractive Apps" in the screen time list
+- Monthly trend chart should include app-based work time too
 
-### 1. Remove duplicate components from Today tab
-- **Remove** the standalone `ActivityTimeline` card — it's already in UnifiedDayView's timeline
-- **Remove** `TimeCharts` — the UnifiedDayView donut already covers this better (includes apps)
-- Keep `DailyInsights` and `SessionIntegrity` as they add unique value
+### 3. `src/pages/Index.tsx`
+- Pass `snapshotSessions` to `MonthlyAnalysis` (already available in state)
 
-### 2. Simplify the App Summary in UnifiedDayView  
-- Remove the collapsible session details (individual session times) — just show app name + total screentime
-- Simpler, scannable list: `Instagram — 1h 12m`, `YouTube — 45m`, etc.
-- Sort by duration descending — biggest time sinks at top
+## Technical Details
 
-### 3. Keep what works
-- **Coverage bar** — quick "X% of day accounted for"
-- **Donut chart** — full picture of activities + app screentime + untracked
-- **Activity timeline** — your logged activities with gap detection
-- **App screentime list** — simple totals, no session breakdown
-
-## Files to Modify
-
-### `src/pages/Index.tsx`
-- Remove the standalone `ActivityTimeline` card and `TimeCharts` from the Today tab grid
-- Clean up the layout to just: input → UnifiedDayView → small utility cards
-
-### `src/components/UnifiedDayView.tsx`
-- Replace the collapsible app groups with a flat screentime list (app name + total time, no expand)
-- Remove `Collapsible` imports and expanded state management
+- App classification source: `app_categories` table (`is_work_app` boolean) + local overrides from `session-app-classifications` localStorage key
+- `app_usage_logs` stores imported screenshot data with `duration_seconds` per app per `usage_date`
+- `screentime-sessions` localStorage stores before/after snapshot diffs with `totalDistractionSeconds`
+- Both sources need to be merged, deduplicated by app name, and classified
 
