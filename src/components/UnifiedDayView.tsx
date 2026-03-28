@@ -48,11 +48,12 @@ function fmtTime(date: Date): string {
 }
 
 function fmtDur(mins: number): string {
-  if (mins < 1) return '<1m';
-  if (mins < 60) return `${Math.round(mins)}m`;
-  const h = Math.floor(mins / 60);
-  const m = Math.round(mins % 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  const m = Math.max(0, mins);
+  if (m < 1) return '<1m';
+  if (m < 60) return `${Math.round(m)}m`;
+  const h = Math.floor(m / 60);
+  const r = Math.round(m % 60);
+  return r > 0 ? `${h}h ${r}m` : `${h}h`;
 }
 
 function getAppColor(appName: string, index: number): string {
@@ -123,7 +124,7 @@ export const UnifiedDayView: React.FC<UnifiedDayViewProps> = ({ activities, appL
           groups.set(key, { appName: key, totalSeconds: 0, sessions: [], color });
         }
         const g = groups.get(key)!;
-        g.totalSeconds += d.diffSeconds;
+        g.totalSeconds += Math.max(0, d.diffSeconds);
         g.sessions.push({ durationSeconds: d.diffSeconds });
       });
     });

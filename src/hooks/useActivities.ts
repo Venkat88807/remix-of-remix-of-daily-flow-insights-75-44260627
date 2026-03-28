@@ -310,10 +310,12 @@ export const useActivities = (selectedDate?: string) => {
     // Also clear Supabase app usage data
     try {
       const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.from('app_usage_logs').delete().gte('created_at', '1970-01-01');
-      await supabase.from('app_distractions').delete().gte('created_at', '1970-01-01');
-      await supabase.from('app_categories').delete().gte('created_at', '1970-01-01');
-      await supabase.from('app_usage_limits').delete().gte('created_at', '1970-01-01');
+      await Promise.all([
+        supabase.from('app_usage_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        supabase.from('app_distractions').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        supabase.from('app_categories').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        supabase.from('app_usage_limits').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      ]);
     } catch (e) {
       console.error('Failed to clear Supabase data:', e);
     }
