@@ -441,7 +441,7 @@ const Index = () => {
                   <Button variant="outline" size="sm" onClick={() => setMonthOffset(0)} disabled={monthOffset === 0}>Current</Button>
                   <Button variant="outline" size="sm" onClick={() => setMonthOffset(m => Math.max(0, m - 1))} disabled={monthOffset === 0}>Next →</Button>
                 </div>
-                <MonthlyAnalysis allData={allData} distractionHistory={distractionHistory} monthOffset={monthOffset} />
+                <MonthlyAnalysis allData={allData} distractionHistory={distractionHistory} monthOffset={monthOffset} snapshotSessions={snapshotSessions} />
               </TabsContent>
 
               <TabsContent value="yearly" className="space-y-4 mt-4">
