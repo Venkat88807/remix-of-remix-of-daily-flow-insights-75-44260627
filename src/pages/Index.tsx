@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Moon, Sun, Download, Upload, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, BellOff, MoreVertical } from 'lucide-react';
+import { Moon, Sun, Download, Upload, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, BellOff, MoreVertical, Settings2 } from 'lucide-react';
 import { getCategoryCorrections } from '@/hooks/useActivities';
 import { format, addDays, subDays } from 'date-fns';
 import { useActivities } from '@/hooks/useActivities';
@@ -14,6 +14,7 @@ import { DistractionPrompt } from '@/components/DistractionPrompt';
 import { ScreentimeSnapshot, SnapshotSession } from '@/components/ScreentimeSnapshot';
 import { SessionIntegrity } from '@/components/SessionIntegrity';
 import { VisualExport } from '@/components/VisualExport';
+import { AppClassificationManager } from '@/components/AppClassificationManager';
 
 import { WeeklyAnalysis } from '@/components/WeeklyAnalysis';
 import { MonthlyAnalysis } from '@/components/MonthlyAnalysis';
@@ -60,6 +61,7 @@ const Index = () => {
     return `${year}-${month}-${day}`;
   });
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showClassificationManager, setShowClassificationManager] = useState(false);
   const [pendingGap, setPendingGap] = useState<{
     startTime: string;
     endTime: string;
@@ -456,7 +458,13 @@ const Index = () => {
           </TabsContent>
 
           {/* ===== APPS TAB ===== */}
-          <TabsContent value="apps">
+          <TabsContent value="apps" className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => setShowClassificationManager(true)} className="gap-1.5">
+                <Settings2 className="h-3.5 w-3.5" />
+                Classify Apps
+              </Button>
+            </div>
             <AppUsagePage />
           </TabsContent>
         </Tabs>
@@ -467,6 +475,7 @@ const Index = () => {
           </p>
         </div>
       </main>
+      <AppClassificationManager open={showClassificationManager} onOpenChange={setShowClassificationManager} />
     </div>
   );
 };

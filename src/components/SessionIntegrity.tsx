@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Activity } from '@/types/activity';
 import { DistractionEvent } from '@/hooks/useAppUsageMonitor';
 import { SnapshotSession } from './ScreentimeSnapshot';
-import { Shield, Smartphone, AlertTriangle, CheckCircle2, Settings2 } from 'lucide-react';
+import { Shield, Smartphone, AlertTriangle, CheckCircle2, Pin, PinOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -211,27 +211,43 @@ export const SessionIntegrity: React.FC<SessionIntegrityProps> = ({
                       <span className="text-xs text-muted-foreground">{fmtSec(app.seconds)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => toggleAppClassification(app.name)}
-                      className={`text-[10px] font-medium px-2 py-1 rounded-full transition-colors ${
-                        app.isProductive
-                          ? 'bg-chart-2/15 text-chart-2'
-                          : 'bg-destructive/10 text-destructive'
-                      }`}
-                    >
-                      {app.isProductive ? '✓ Work' : '✗ Waste'}
-                    </button>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex rounded-md overflow-hidden border border-border">
+                      <button
+                        onClick={() => {
+                          if (!app.isProductive) toggleAppClassification(app.name);
+                        }}
+                        className={`text-[10px] font-medium px-2.5 py-1 transition-colors ${
+                          app.isProductive
+                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-transparent text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        Work
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (app.isProductive) toggleAppClassification(app.name);
+                        }}
+                        className={`text-[10px] font-medium px-2.5 py-1 transition-colors ${
+                          !app.isProductive
+                            ? 'bg-destructive/20 text-destructive'
+                            : 'bg-transparent text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        Waste
+                      </button>
+                    </div>
                     <button
                       onClick={() => markGlobalProductive(app.name, !isGlobal)}
                       className={`p-1 rounded transition-colors ${
                         isGlobal
                           ? 'text-primary bg-primary/10'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                          : 'text-muted-foreground/40 hover:text-foreground hover:bg-muted'
                       }`}
-                      title={isGlobal ? 'Always marked as work' : 'Pin as always work'}
+                      title={isGlobal ? 'Always remembered as work — click to unpin' : 'Remember this classification globally'}
                     >
-                      <Settings2 className="h-3.5 w-3.5" />
+                      {isGlobal ? <Pin className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
                     </button>
                   </div>
                 </div>
