@@ -475,6 +475,7 @@ const Index = () => {
           </p>
         </div>
       </main>
+      <AppClassificationManager open={showClassificationManager} onOpenChange={setShowClassificationManager} />
     </div>
   );
 };
