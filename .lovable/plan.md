@@ -1,38 +1,34 @@
 
 
-# Include App Usage in Monthly/All-Time Stats + Track Distractions
+# Improve App Classification UX + Include App Usage in Stats
 
-## What This Solves
-Currently, MonthlyAnalysis and AllTimeStats only count manual activity logs (work, coding, meetings) for work totals and only native distraction events for distraction totals. Screenshot-based app usage (from `app_usage_logs` and `screentime-sessions`) is completely ignored in these views. The user wants:
-1. Productive app usage (apps classified as work) to count toward work totals
-2. Distractive app usage to count toward distraction totals
-3. This to work across monthly and all-time views
+## Current State
+The app classification UI in SessionIntegrity has two small buttons per app: a pill toggle ("✓ Work" / "✗ Waste") for session-level and a tiny gear icon for global pinning. This is functional but not very intuitive — the gear icon's purpose is unclear and there's no way to manage all classified apps in one place.
+
+The AllTimeStats and MonthlyAnalysis were recently updated to include app usage in work/distraction totals — that's already done.
 
 ## Changes
 
-### 1. `src/components/MonthlyAnalysis.tsx`
-- Accept `snapshotSessions` as a prop (from localStorage `screentime-sessions`)
-- Load app classifications from Supabase `app_categories` table
-- For each day in the month, aggregate snapshot diffs: apps marked productive add to work, apps marked distractive add to distraction totals
-- Also query `app_usage_logs` for the month's date range to include imported screenshot data classified by `app_categories.is_work_app`
-- Show a new "Screen Time" stat card alongside Work/Distraction/Integrity
+### 1. Better Classification UI in SessionIntegrity
+- Replace the current pill + gear combo with a **segmented toggle** per app: `Work | Waste` with clear active states (green/red backgrounds)
+- Add a **"Remember" checkbox or toggle** next to each app that saves the classification globally (replaces the cryptic gear icon)
+- When "Remember" is on, show a small pin/lock icon so the user knows it's saved permanently
 
-### 2. `src/components/AllTimeStats.tsx`
-- Already loads `appUsageStats` and `allSnapshotSessions` but doesn't classify them
-- Load `app_categories` to know which apps are productive vs distractive
-- Split `appUsageStats` into productive and distractive buckets
-- Add productive app time to `totalProductiveMin`
-- Add distractive app time to `totalDistractionMin`
-- Show separate "Productive Apps" and "Distractive Apps" in the screen time list
-- Monthly trend chart should include app-based work time too
+### 2. Dedicated App Classification Manager
+- Add a new section/dialog accessible from Settings or the App Usage page
+- Lists all apps from `app_categories` table
+- Each app shows: name, current classification (Work/Waste), toggle to change
+- Can bulk-classify or search apps
+- This gives a single place to manage all global classifications
 
-### 3. `src/pages/Index.tsx`
-- Pass `snapshotSessions` to `MonthlyAnalysis` (already available in state)
+### 3. Files to Change
+- **`src/components/SessionIntegrity.tsx`** — Redesign per-app row with segmented toggle + "Remember" option
+- **`src/components/AppClassificationManager.tsx`** (new) — Standalone dialog/page for managing all app classifications from `app_categories`
+- **`src/pages/Index.tsx`** — Add access point to the classification manager (e.g. in settings area or app usage tab)
 
 ## Technical Details
-
-- App classification source: `app_categories` table (`is_work_app` boolean) + local overrides from `session-app-classifications` localStorage key
-- `app_usage_logs` stores imported screenshot data with `duration_seconds` per app per `usage_date`
-- `screentime-sessions` localStorage stores before/after snapshot diffs with `totalDistractionSeconds`
-- Both sources need to be merged, deduplicated by app name, and classified
+- Global classifications: upsert to `app_categories` table with `is_work_app` boolean
+- Session overrides: continue using `session-app-classifications` localStorage key
+- The segmented toggle uses existing shadcn ToggleGroup component
+- Classification manager queries `app_categories` + `app_usage_logs` (distinct app names) to show all known apps
 
